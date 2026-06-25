@@ -103,7 +103,7 @@ type LoginState = "idle" | "sending" | "sent" | "error";
 type KeyState = "idle" | "creating" | "created" | "error";
 
 const apiBaseUrl =
-  import.meta.env.VITE_0GMEM_API_URL?.replace(/\/$/, "") ??
+  import.meta.env.VITE_0GMEM_API_URL?.trim().replace(/\/$/, "") ??
   (import.meta.env.PROD
     ? "https://0gmem-backend-production.up.railway.app"
     : "http://127.0.0.1:8787");
