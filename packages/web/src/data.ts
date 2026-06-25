@@ -162,7 +162,7 @@ export const connectionMethods: ConnectionMethod[] = [
     title: "REST API",
     subtitle: "Best for Python agents, workers, notebooks, and hosted services.",
     icon: Link2,
-    command: "npm run api:dev",
+    command: "https://0gmem-backend-production.up.railway.app/v1",
     bullets: [
       "POST /memory",
       "GET /profile and POST /context",

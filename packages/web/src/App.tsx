@@ -104,7 +104,11 @@ type KeyState = "idle" | "creating" | "created" | "error";
 
 const apiBaseUrl =
   import.meta.env.VITE_0GMEM_API_URL?.replace(/\/$/, "") ??
-  "http://127.0.0.1:8787";
+  (import.meta.env.PROD
+    ? "https://0gmem-backend-production.up.railway.app"
+    : "http://127.0.0.1:8787");
+
+const publicApiBaseUrl = "https://0gmem-backend-production.up.railway.app";
 
 const emptyManualForm: ManualMemoryForm = {
   agentId: agentOptions[0].id,
@@ -2021,9 +2025,9 @@ function DecisionPill({ decision }: { decision: Decision }) {
 /* ── Utilities ────────────────────────────────────────── */
 
 function connectionSnippet(method: MethodId) {
-  if (method === "api") return `await fetch("http://127.0.0.1:8787/v1/memory", {\n  method: "POST",\n  headers: {\n    "Authorization": "Bearer " + process.env.OGMEM_API_KEY,\n    "Content-Type": "application/json"\n  },\n  body: JSON.stringify(memory)\n});`;
+  if (method === "api") return `await fetch("${publicApiBaseUrl}/v1/memory", {\n  method: "POST",\n  headers: {\n    "Authorization": "Bearer " + process.env.OGMEM_API_KEY,\n    "Content-Type": "application/json"\n  },\n  body: JSON.stringify(memory)\n});`;
   if (method === "mcp") return `{\n  "name": "0gmem",\n  "type": "streamable-http",\n  "url": "https://0gmem-backend-production.up.railway.app/mcp",\n  "bearerTokenEnvVar": "OGMEM_API_KEY"\n}`;
-  return `import { ZeroGMemApiClient } from "@0g-mem/sdk";\n\nconst client = new ZeroGMemApiClient({\n  apiKey: process.env.OGMEM_API_KEY,\n  baseUrl: "http://127.0.0.1:8787"\n});\n\nawait client.memory.add(memory);\nconst context = await client.context.forTradePlan(plan);\nconst review = await client.aegis.risk.reviewPlan(plan);`;
+  return `import { ZeroGMemApiClient } from "@0g-mem/sdk";\n\nconst client = new ZeroGMemApiClient({\n  apiKey: process.env.OGMEM_API_KEY,\n  baseUrl: "${publicApiBaseUrl}"\n});\n\nawait client.memory.add(memory);\nconst context = await client.context.forTradePlan(plan);\nconst review = await client.aegis.risk.reviewPlan(plan);`;
 }
 
 function SyntaxHighlightedCode({ method }: { method: MethodId }) {
@@ -2033,7 +2037,7 @@ function SyntaxHighlightedCode({ method }: { method: MethodId }) {
         <span className="syn-kw">import</span>{" { ZeroGMemApiClient } "}<span className="syn-kw">from</span> <span className="syn-str">"@0g-mem/sdk"</span>{";\n\n"}
         <span className="syn-kw">const</span> client = <span className="syn-kw">new</span> <span className="syn-fn">ZeroGMemApiClient</span>{"({\n"}
         {"  "}<span className="syn-prop">apiKey</span>{": process.env."}<span className="syn-prop">OGMEM_API_KEY</span>{",\n"}
-        {"  "}<span className="syn-prop">baseUrl</span>{": "}<span className="syn-str">"http://127.0.0.1:8787"</span>{"\n"}{"})"}{";"}
+        {"  "}<span className="syn-prop">baseUrl</span>{": "}<span className="syn-str">"https://0gmem-backend-production.up.railway.app"</span>{"\n"}{"})"}{";"}
         {"\n\n"}<span className="syn-kw">await</span> client.memory.<span className="syn-fn">add</span>{"(memory);\n"}
         <span className="syn-kw">const</span> context = <span className="syn-kw">await</span> client.context.<span className="syn-fn">forTradePlan</span>{"(plan);\n"}
         <span className="syn-kw">const</span> review = <span className="syn-kw">await</span> client.aegis.risk.<span className="syn-fn">reviewPlan</span>{"(plan);"}
@@ -2055,7 +2059,7 @@ function SyntaxHighlightedCode({ method }: { method: MethodId }) {
   // api
   return (
     <code>
-      <span className="syn-kw">await</span> <span className="syn-fn">fetch</span>{"("}<span className="syn-str">"http://127.0.0.1:8787/v1/memory"</span>{", {\n"}
+      <span className="syn-kw">await</span> <span className="syn-fn">fetch</span>{"("}<span className="syn-str">"https://0gmem-backend-production.up.railway.app/v1/memory"</span>{", {\n"}
       {"  "}<span className="syn-prop">method</span>{": "}<span className="syn-str">"POST"</span>{",\n"}
       {"  "}<span className="syn-prop">headers</span>{": {\n"}
       {"    "}<span className="syn-str">"Authorization"</span>{": "}<span className="syn-str">"Bearer "</span>{" + process.env."}<span className="syn-prop">OGMEM_API_KEY</span>{",\n"}
