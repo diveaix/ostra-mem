@@ -5,6 +5,20 @@
   "type": "module",
   "main": "dist/server.js",
   "types": "dist/server.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
+    },
+    "./create-server": {
+      "types": "./dist/create-server.d.ts",
+      "import": "./dist/create-server.js"
+    },
+    "./http-app": {
+      "types": "./dist/http-app.d.ts",
+      "import": "./dist/http-app.js"
+    }
+  },
   "bin": {
     "0g-mem-mcp": "dist/server.js"
   },

@@ -3,12 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w @0g-mem/sdk && npm run build -w @0g-mem/api && npm run build -w @0g-mem/mcp && npm run build -w @0g-mem/web",
+    "build": "npm run build -w @0g-mem/sdk && npm run build -w @0g-mem/api && npm run build -w @0g-mem/mcp && npm run build -w @0g-mem/backend && npm run build -w @0g-mem/web",
+    "build:backend": "npm run build -w @0g-mem/sdk && npm run build -w @0g-mem/api && npm run build -w @0g-mem/mcp && npm run build -w @0g-mem/backend",
     "test": "npm run test -w @0g-mem/sdk && npm run test -w @0g-mem/api",
+    "backend:dev": "npm run dev -w @0g-mem/backend",
+    "backend:start": "npm run start -w @0g-mem/backend",
     "api:dev": "tsx packages/api/src/server.ts",
     "api:smoke": "npm run build && tsx packages/api/examples/smoke.ts",
     "contracts:deploy:aegis": "node contracts/deploy-aegis.mjs",

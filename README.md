@@ -8,6 +8,19 @@ Built for the 0G hackathon.
 
 ![0G-Mem memory map](packages/web/public/assets/minimal-memory-map.png)
 
+## Live Backend
+
+The public Railway backend exposes REST and Streamable HTTP MCP on one domain:
+
+```text
+REST API: https://0gmem-backend-production.up.railway.app/v1
+MCP URL:  https://0gmem-backend-production.up.railway.app/mcp
+Health:   https://0gmem-backend-production.up.railway.app/health
+```
+
+SDK clients should use `baseUrl: "https://0gmem-backend-production.up.railway.app"`.
+MCP clients should use the `/mcp` URL with the agent API key as the bearer token.
+
 ## What This Website Can Do
 
 The web app is the operator control plane for 0G-Mem.
@@ -450,7 +463,7 @@ workspace.
 For public demos, host the API/MCP backend and use its HTTPS endpoint:
 
 ```text
-https://your-0gmem-api.example.com/mcp
+https://0gmem-backend-production.up.railway.app/mcp
 ```
 
 Tools exposed:

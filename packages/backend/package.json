@@ -1,0 +1,22 @@
+{
+  "name": "@0g-mem/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "dev": "tsx src/server.ts"
+  },
+  "dependencies": {
+    "@0g-mem/api": "file:../api",
+    "@0g-mem/mcp": "file:../mcp",
+    "@0g-mem/sdk": "file:../sdk"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.14",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

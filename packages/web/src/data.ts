@@ -150,7 +150,7 @@ export const connectionMethods: ConnectionMethod[] = [
     title: "Streamable HTTP MCP",
     subtitle: "Best for Codex, Claude, and LLM agents that connect through a hosted MCP URL.",
     icon: Plug,
-    command: "https://your-0gmem-api.example.com/mcp",
+    command: "https://0gmem-backend-production.up.railway.app/mcp",
     bullets: [
       "Paste one HTTPS URL into the MCP client",
       "Use the agent API key as the bearer token",

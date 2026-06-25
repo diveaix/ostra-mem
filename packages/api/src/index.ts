@@ -492,11 +492,12 @@ function parseCookies(header: string | undefined): Record<string, string> {
 }
 
 function makeSessionCookie(sessionToken: string): string {
+  const sameSite = process.env.OG_MEM_COOKIE_SAMESITE ?? "Lax";
   const parts = [
     `${SESSION_COOKIE}=${encodeURIComponent(sessionToken)}`,
     "Path=/",
     "HttpOnly",
-    "SameSite=Lax",
+    `SameSite=${sameSite}`,
     "Max-Age=604800"
   ];
   if (process.env.OG_MEM_COOKIE_SECURE === "true") {
@@ -506,7 +507,18 @@ function makeSessionCookie(sessionToken: string): string {
 }
 
 function clearSessionCookie(): string {
-  return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+  const sameSite = process.env.OG_MEM_COOKIE_SAMESITE ?? "Lax";
+  const parts = [
+    `${SESSION_COOKIE}=`,
+    "Path=/",
+    "HttpOnly",
+    `SameSite=${sameSite}`,
+    "Max-Age=0"
+  ];
+  if (process.env.OG_MEM_COOKIE_SECURE === "true") {
+    parts.push("Secure");
+  }
+  return parts.join("; ");
 }
 
 function sendJson(

@@ -2022,7 +2022,7 @@ function DecisionPill({ decision }: { decision: Decision }) {
 
 function connectionSnippet(method: MethodId) {
   if (method === "api") return `await fetch("http://127.0.0.1:8787/v1/memory", {\n  method: "POST",\n  headers: {\n    "Authorization": "Bearer " + process.env.OGMEM_API_KEY,\n    "Content-Type": "application/json"\n  },\n  body: JSON.stringify(memory)\n});`;
-  if (method === "mcp") return `{\n  "name": "0gmem",\n  "type": "streamable-http",\n  "url": "https://your-0gmem-api.example.com/mcp",\n  "bearerTokenEnvVar": "OGMEM_API_KEY"\n}`;
+  if (method === "mcp") return `{\n  "name": "0gmem",\n  "type": "streamable-http",\n  "url": "https://0gmem-backend-production.up.railway.app/mcp",\n  "bearerTokenEnvVar": "OGMEM_API_KEY"\n}`;
   return `import { ZeroGMemApiClient } from "@0g-mem/sdk";\n\nconst client = new ZeroGMemApiClient({\n  apiKey: process.env.OGMEM_API_KEY,\n  baseUrl: "http://127.0.0.1:8787"\n});\n\nawait client.memory.add(memory);\nconst context = await client.context.forTradePlan(plan);\nconst review = await client.aegis.risk.reviewPlan(plan);`;
 }
 
@@ -2046,7 +2046,7 @@ function SyntaxHighlightedCode({ method }: { method: MethodId }) {
         {"{\n"}
         {"  "}<span className="syn-prop">"name"</span>{": "}<span className="syn-str">"0gmem"</span>{",\n"}
         {"  "}<span className="syn-prop">"type"</span>{": "}<span className="syn-str">"streamable-http"</span>{",\n"}
-        {"  "}<span className="syn-prop">"url"</span>{": "}<span className="syn-str">"https://your-0gmem-api.example.com/mcp"</span>{",\n"}
+        {"  "}<span className="syn-prop">"url"</span>{": "}<span className="syn-str">"https://0gmem-backend-production.up.railway.app/mcp"</span>{",\n"}
         {"  "}<span className="syn-prop">"bearerTokenEnvVar"</span>{": "}<span className="syn-str">"OGMEM_API_KEY"</span>{"\n"}
         {"}"}
       </code>

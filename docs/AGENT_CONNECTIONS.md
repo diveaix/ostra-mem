@@ -97,7 +97,7 @@ http://127.0.0.1:8788/mcp
 Hosted URL shape:
 
 ```text
-https://your-0gmem-api.example.com/mcp
+https://0gmem-backend-production.up.railway.app/mcp
 ```
 
 The MCP server reads the user or agent API key from `Authorization: Bearer ...`.
@@ -122,7 +122,7 @@ Example Streamable HTTP MCP client config:
   "mcpServers": {
     "0gmem": {
       "type": "streamable-http",
-      "url": "http://127.0.0.1:8788/mcp",
+      "url": "https://0gmem-backend-production.up.railway.app/mcp",
       "bearerTokenEnvVar": "OGMEM_API_KEY"
     }
   }
