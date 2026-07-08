@@ -1,47 +1,47 @@
 import { LearningClient } from "./learning.js";
-import { AegisModule } from "./aegis.js";
 import { createComputeFromConfig } from "./compute.js";
 import type { ComputeClient } from "./compute.js";
-import { createStorageFromConfig, ZeroGMemCore } from "./ogmem.js";
+import { createStorageFromConfig, OstraMemCore } from "./ogmem.js";
 import { createProofRecorderFromConfig, ProofsClient } from "./proofs.js";
-import type { AegisRiskClient } from "./risk.js";
 import type { ContextClient } from "./context.js";
 import type { MemoryClient } from "./memory.js";
 import type { ProfileClient } from "./profile.js";
 import type { MemoryStorage } from "./storage.js";
 import { TradesClient } from "./trades.js";
-import type { ZeroGMemConfig } from "./types.js";
+import { VaultClient } from "./vault.js";
+import { ZamaModule } from "./zama.js";
+import type { OstraMemConfig } from "./types.js";
 
-export class ZeroGMem {
-  readonly ogmem: ZeroGMemCore;
-  readonly aegis: AegisModule;
+export class OstraMem {
+  readonly ostraMem: OstraMemCore;
+  readonly ogmem: OstraMemCore;
   readonly memory: MemoryClient;
   readonly context: ContextClient;
   readonly profile: ProfileClient;
-  readonly risk: AegisRiskClient;
   readonly trades: TradesClient;
   readonly learning: LearningClient;
   readonly proofs: ProofsClient;
+  readonly zama: ZamaModule;
+  readonly vault: VaultClient;
   private readonly compute: ComputeClient;
 
   constructor(
-    readonly config: ZeroGMemConfig = {},
+    readonly config: OstraMemConfig = {},
     storage: MemoryStorage = createStorageFromConfig(config.storage),
     compute: ComputeClient = createComputeFromConfig(config.compute)
   ) {
-    this.ogmem = new ZeroGMemCore(storage);
+    this.ostraMem = new OstraMemCore(storage);
+    this.ogmem = this.ostraMem;
     this.compute = compute;
-    this.aegis = new AegisModule(
-      this.ogmem.memory,
-      this.ogmem.context,
-      this.compute
-    );
-    this.memory = this.ogmem.memory;
-    this.context = this.ogmem.context;
-    this.profile = this.ogmem.profile;
-    this.risk = this.aegis.risk;
+    this.memory = this.ostraMem.memory;
+    this.context = this.ostraMem.context;
+    this.profile = this.ostraMem.profile;
     this.trades = new TradesClient(this.memory);
     this.learning = new LearningClient(this.memory, this.compute);
     this.proofs = new ProofsClient(createProofRecorderFromConfig(config.chain));
+    this.zama = new ZamaModule(config.zama);
+    this.vault = new VaultClient(this.memory, this.zama);
   }
 }
+
+export { OstraMem as ZeroGMem };

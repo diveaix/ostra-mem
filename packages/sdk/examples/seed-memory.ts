@@ -10,13 +10,13 @@ const memories = await Promise.all([
 const records = [];
 
 for (const memory of memories) {
-  records.push(await sdk.ogmem.memory.add(memory));
+  records.push(await sdk.ostraMem.memory.add(memory));
 }
 
 console.log(
   JSON.stringify(
     {
-      memoryPath: ".0g-mem/demo-memory.json",
+      memoryPath: ".ostra-mem/demo-memory.json",
       stored: records.map((record) => ({
         id: record.id,
         kind: record.kind,

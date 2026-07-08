@@ -1,5 +1,5 @@
 {
-  "name": "@0g-mem/mcp",
+  "name": "@ostra-mem/mcp",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -20,7 +20,7 @@
     }
   },
   "bin": {
-    "0g-mem-mcp": "dist/server.js"
+    "ostra-mem-mcp": "dist/server.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -28,7 +28,7 @@
     "http:dev": "tsx src/http.ts"
   },
   "dependencies": {
-    "@0g-mem/sdk": "file:../sdk",
+    "@ostra-mem/sdk": "file:../sdk",
     "@modelcontextprotocol/sdk": "^1.17.4",
     "zod": "^3.25.76"
   },

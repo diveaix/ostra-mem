@@ -1,5 +1,5 @@
 {
-  "name": "@0g-mem/api",
+  "name": "@ostra-mem/api",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -15,7 +15,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@0g-mem/sdk": "file:../sdk"
+    "@ostra-mem/sdk": "file:../sdk"
   },
   "devDependencies": {
     "@types/node": "^22.13.14",

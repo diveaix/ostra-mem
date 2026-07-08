@@ -1,6 +1,6 @@
-# Live 0G Checklist
+# Legacy 0G Checklist
 
-This repo is fully runnable in local/file mode. The following steps require live credentials, funded wallets, or deployed addresses.
+This is an archived checklist for optional legacy 0G adapters retained from the original codebase. It is not required for the current Ostra Mem submission path, which uses encrypted local vault storage plus Zama Sepolia memory anchoring.
 
 ## 1. Environment
 
@@ -13,7 +13,7 @@ OG_STORAGE_PRIVATE_KEY=
 OG_COMPUTE_API_KEY=
 OG_COMPUTE_BASE_URL=https://router-api.0g.ai/v1
 OG_COMPUTE_MODEL=zai-org/GLM-5-FP8
-AEGIS_REGISTRY_ADDRESS=
+OG_PROOF_REGISTRY_ADDRESS=
 OG_CHAIN_PRIVATE_KEY=
 ```
 
@@ -76,12 +76,12 @@ The official storage SDK dependency chain may introduce third-party audit adviso
 
 Source: https://docs.0g.ai/developer-hub/building-on-0g/storage/sdk
 
-## 4. 0G Chain Proof Registry
+## 4. Legacy 0G Chain Proof Registry
 
 Contract:
 
 ```text
-contracts/AegisProofRegistry.sol
+legacy proof registry contract
 ```
 
 0G contract deployment docs currently specify Cancun EVM compatibility and these network values:
@@ -96,7 +96,7 @@ contracts/AegisProofRegistry.sol
 After deploying the registry, set:
 
 ```bash
-AEGIS_REGISTRY_ADDRESS=<deployed-contract-address>
+OG_PROOF_REGISTRY_ADDRESS=<deployed-contract-address>
 OG_CHAIN_PRIVATE_KEY=<funded-private-key>
 ```
 
@@ -107,7 +107,7 @@ const sdk = new ZeroGMem({
   chain: {
     provider: "0g",
     rpcUrl: process.env.OG_EVM_RPC,
-    registryAddress: process.env.AEGIS_REGISTRY_ADDRESS,
+    registryAddress: process.env.OG_PROOF_REGISTRY_ADDRESS,
     privateKey: process.env.OG_CHAIN_PRIVATE_KEY
   }
 });
@@ -126,8 +126,8 @@ npm run api:smoke
 npm audit --omit=dev
 ```
 
-Then record these live artifacts if credentials are available:
+For legacy 0G adapter demos, record these artifacts if credentials are available:
 
 - a 0G Storage root hash for one memory object
-- a 0G Compute response in a risk report
-- a 0G Chain transaction hash from `recordDecision`
+- a 0G Compute response for private memory summarization
+- a 0G Chain transaction hash from the legacy proof recorder

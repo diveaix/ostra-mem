@@ -73,7 +73,7 @@ export class InMemoryStorage implements MemoryStorage {
 }
 
 export class JsonFileStorage extends InMemoryStorage {
-  constructor(private readonly filePath = ".0g-mem/memory.json") {
+  constructor(private readonly filePath = ".ostra-mem/memory.json") {
     super();
   }
 
@@ -112,7 +112,12 @@ export class JsonFileStorage extends InMemoryStorage {
   private async load(): Promise<void> {
     try {
       const raw = await readFile(this.filePath, "utf8");
-      const records = JSON.parse(stripBom(raw)) as MemoryRecord[];
+      const normalized = stripBom(raw).trim();
+      if (!normalized) {
+        this.memories.clear();
+        return;
+      }
+      const records = JSON.parse(normalized) as MemoryRecord[];
       this.memories.clear();
 
       for (const record of records) {

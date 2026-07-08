@@ -18,7 +18,7 @@ export class LearningClient {
     const reflection = await this.compute.generate({
       purpose: "failure_reflection",
       system:
-        "You are 0G-Mem Learning, a private reflection engine for autonomous trading agents. Produce one concise lesson that improves future safety without loosening policy.",
+        "You are Ostra Mem Learning, a private reflection engine for autonomous trading agents. Produce one concise lesson that improves future safety without loosening policy.",
       user: JSON.stringify({
         planId: input.planId,
         relatedMemories: related.map((memory) => ({

@@ -31,7 +31,10 @@ export class ContextClient {
         "risk_report",
         "blocked_action",
         "failure_lesson",
-        "protocol_profile"
+        "protocol_profile",
+        "enterprise_document",
+        "document_chunk",
+        "vault_link"
       ],
       limit: 12
     });

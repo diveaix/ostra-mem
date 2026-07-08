@@ -27,9 +27,12 @@ export type MemoryKind =
   | "blocked_action"
   | "failure_lesson"
   | "human_feedback"
-  | "protocol_profile";
+  | "protocol_profile"
+  | "enterprise_document"
+  | "document_chunk"
+  | "vault_link";
 
-export type MemorySource = "SDK" | "MCP" | "API" | "Manual";
+export type MemorySource = "SDK" | "MCP" | "API" | "Manual" | "Vault";
 
 export type MemoryNode = {
   id: string;
@@ -70,7 +73,10 @@ export const kindLabels: Record<MemoryKind, string> = {
   blocked_action: "Blocked action",
   failure_lesson: "Failure lesson",
   human_feedback: "Human feedback",
-  protocol_profile: "Protocol profile"
+  protocol_profile: "Protocol profile",
+  enterprise_document: "Enterprise document",
+  document_chunk: "Document chunk",
+  vault_link: "Vault link"
 };
 
 export const sourceMeta: Record<
@@ -100,10 +106,17 @@ export const sourceMeta: Record<
     color: "#ea580c",
     soft: "rgba(234, 88, 12, 0.08)",
     detail: "operator dashboard entry"
+  },
+  Vault: {
+    label: "Vault",
+    color: "#16a34a",
+    soft: "rgba(22, 163, 74, 0.08)",
+    detail: "encrypted enterprise document"
   }
 };
 
 export const agentOptions = [
+  { id: "enterprise-vault", name: "Enterprise Vault" },
   { id: "agent-arb-01", name: "Arb Sentinel" },
   { id: "agent-yield-02", name: "Yield Steward" },
   { id: "agent-risk-03", name: "Policy Keeper" }
@@ -111,18 +124,18 @@ export const agentOptions = [
 
 export const stackItems = [
   {
-    title: "0G Storage",
-    detail: "Durable memory artifacts: strategies, trade outcomes, failures, policy files, and agent profiles.",
+    title: "Zama FHEVM",
+    detail: "Private memory commitments can be anchored on Zama Sepolia without exposing the underlying data.",
     icon: Database
   },
   {
-    title: "0G Compute",
-    detail: "Private reasoning path for explanations, failure reflection, and policy summaries.",
+    title: "Encrypted Vault",
+    detail: "Company documents are stored off-chain as encrypted memory and exposed only through scoped agent access.",
     icon: Cpu
   },
   {
-    title: "0G Chain",
-    detail: "Compact proof hashes for review decisions, report integrity, and memory provenance.",
+    title: "Zama ACL",
+    detail: "The architecture is ready for agent, owner, and auditor-specific access controls around private memory.",
     icon: KeyRound
   },
   {
@@ -138,11 +151,11 @@ export const connectionMethods: ConnectionMethod[] = [
     title: "TypeScript SDK",
     subtitle: "Best for agents already running in Node or a TypeScript execution service.",
     icon: Braces,
-    command: "npm install @0g-mem/sdk",
+    command: "npm install @ostra-mem/sdk",
     bullets: [
       "Add memories from the agent runtime",
-      "Fetch profile and context before a trade plan",
-      "Record outcomes and failure lessons after execution"
+      "Ingest private documents into the vault",
+      "Fetch profile and vault graph context"
     ]
   },
   {
@@ -150,11 +163,11 @@ export const connectionMethods: ConnectionMethod[] = [
     title: "Streamable HTTP MCP",
     subtitle: "Best for Codex, Claude, and LLM agents that connect through a hosted MCP URL.",
     icon: Plug,
-    command: "https://0gmem-backend-production.up.railway.app/mcp",
+    command: "https://ostramem-backend-production.up.railway.app/mcp",
     bullets: [
       "Paste one HTTPS URL into the MCP client",
       "Use the agent API key as the bearer token",
-      "Expose memory, context, review, outcomes, and reflection tools"
+      "Expose memory, vault ingest, graph, and profile tools"
     ]
   },
   {
@@ -162,11 +175,11 @@ export const connectionMethods: ConnectionMethod[] = [
     title: "REST API",
     subtitle: "Best for Python agents, workers, notebooks, and hosted services.",
     icon: Link2,
-    command: "https://0gmem-backend-production.up.railway.app/v1",
+    command: "https://ostramem-backend-production.up.railway.app/v1",
     bullets: [
       "POST /memory",
-      "GET /profile and POST /context",
-      "POST /review-plan and POST /learning/reflect"
+      "POST /vault/ingest and GET /vault/graph",
+      "GET /profile for scoped retrieval"
     ]
   }
 ];
@@ -189,17 +202,17 @@ export const demoPlan = {
 export const productPillars = [
   {
     title: "Memory before action",
-    body: "The agent retrieves its own history, policy, skills, prior trades, and failures before it proposes transactions.",
+    body: "The agent retrieves scoped policies, runbooks, notes, and prior decisions before it acts.",
     icon: Database
   },
   {
-    title: "Safety around execution",
-    body: "Aegis reviews plans and returns ALLOW, WARN, BLOCK, or REQUIRE_HUMAN without becoming the trading agent.",
+    title: "Private enterprise vault",
+    body: "Documents are chunked, encrypted at rest, linked as a graph, and exposed only through authenticated agent access.",
     icon: ShieldCheck
   },
   {
     title: "Learning after outcomes",
-    body: "Failures and wins are stored as reusable lessons so future plans start from evidence, not amnesia.",
+    body: "New notes, runbooks, and outcomes become reusable private context so agents do not start from scratch.",
     icon: GitBranch
   }
 ];
@@ -221,15 +234,15 @@ export const productFeatures: ProductFeature[] = [
     num: "01",
     title: "Memory",
     headline: "Persistent context across sessions",
-    body: "Agent strategies, skills, policies, past trades, and failure lessons are stored in 0G Storage and retrieved before every decision. No amnesia between runs.",
+    body: "Company policies, runbooks, decisions, and agent notes are stored as private memory and retrieved before every action. No amnesia between runs.",
     icon: Brain
   },
   {
-    id: "aegis",
+    id: "vault",
     num: "02",
-    title: "Aegis Risk",
-    headline: "Pre-execution safety review",
-    body: "Every transaction plan passes through deterministic policy checks and private AI reasoning before it touches money. Returns ALLOW, WARN, BLOCK, or REQUIRE_HUMAN.",
+    title: "Vault Graph",
+    headline: "Obsidian-like knowledge structure",
+    body: "Documents are split into chunks and wiki-style links become graph edges agents can traverse.",
     icon: ShieldCheck
   },
   {
@@ -237,15 +250,15 @@ export const productFeatures: ProductFeature[] = [
     num: "03",
     title: "Learning",
     headline: "Structured failure reflection",
-    body: "Failed trades produce reusable lessons with root cause analysis, suggested policy changes, and human-approval flags. Future reviews start from evidence.",
+    body: "New project notes, incident writeups, and decisions become reusable context for future agent work.",
     icon: GitBranch
   },
   {
     id: "proofs",
     num: "04",
-    title: "Proofs",
-    headline: "Verifiable audit trail on 0G Chain",
-    body: "Decision hashes, risk reports, and memory artifacts are anchored on-chain. Owners can verify that nothing was silently changed.",
+    title: "Hash Anchors",
+    headline: "Private memory, public commitments",
+    body: "Ostra anchors memory hashes and storage URIs on Zama Sepolia without publishing plaintext.",
     icon: KeyRound
   },
   {
@@ -261,7 +274,7 @@ export const productFeatures: ProductFeature[] = [
     num: "06",
     title: "Context",
     headline: "Relevant memory retrieval",
-    body: "Before a trade plan is reviewed, the context module retrieves matching policies, past failures, trusted protocols, and strategy rules automatically.",
+    body: "Before an agent answers, the context module retrieves matching policies, runbooks, documents, and prior notes automatically.",
     icon: Workflow
   }
 ];
@@ -269,16 +282,16 @@ export const productFeatures: ProductFeature[] = [
 export type ComparisonRow = {
   aspect: string;
   legacy: string;
-  ogmem: string;
+  ostraMem: string;
 };
 
 export const comparisonRows: ComparisonRow[] = [
-  { aspect: "Memory", legacy: "Stateless between runs", ogmem: "Persistent across sessions" },
-  { aspect: "Safety", legacy: "Hope for the best", ogmem: "Policy + AI review before execution" },
-  { aspect: "Learning", legacy: "Repeat the same mistakes", ogmem: "Structured failure lessons" },
-  { aspect: "Audit", legacy: "No trail", ogmem: "Proof hashes on 0G Chain" },
-  { aspect: "Storage", legacy: "Centralized or none", ogmem: "Decentralized on 0G Storage" },
-  { aspect: "Privacy", legacy: "Exposed reasoning", ogmem: "Private compute via 0G Router" }
+  { aspect: "Memory", legacy: "Stateless between runs", ostraMem: "Persistent across sessions" },
+  { aspect: "Retrieval", legacy: "Manual search", ostraMem: "Scoped profile and vault graph context" },
+  { aspect: "Learning", legacy: "Repeat the same questions", ostraMem: "Reusable private notes and decisions" },
+  { aspect: "Audit", legacy: "No trail", ostraMem: "Hash-only Zama Sepolia anchors" },
+  { aspect: "Storage", legacy: "Centralized or none", ostraMem: "Private memory plus hash pointers" },
+  { aspect: "Privacy", legacy: "Exposed reasoning", ostraMem: "FHE policy checks through Zama" }
 ];
 
 export type HowItWorksStep = {
@@ -290,7 +303,7 @@ export type HowItWorksStep = {
 export const howItWorksSteps: HowItWorksStep[] = [
   { num: "1", title: "Plug in", body: "Install the SDK, start the MCP server, or point your agent at the REST API." },
   { num: "2", title: "Add memory", body: "Store strategies, policies, skills, and protocol trust profiles." },
-  { num: "3", title: "Review plan", body: "Submit a transaction plan. Aegis checks policy, calldata, and past failures." },
-  { num: "4", title: "Execute or stop", body: "Act on the ALLOW/WARN/BLOCK/REQUIRE_HUMAN decision." },
-  { num: "5", title: "Record & learn", body: "Store outcomes. Generate failure lessons. Anchor proof hashes on chain." }
+  { num: "3", title: "Ingest documents", body: "Upload company notes, policies, runbooks, and datasets into encrypted vault memory." },
+  { num: "4", title: "Explore graph", body: "Use chunks and wiki-style links as an Obsidian-like agent knowledge graph." },
+  { num: "5", title: "Anchor hashes", body: "Optionally anchor memory hashes on Zama Sepolia without exposing plaintext." }
 ];

@@ -1,6 +1,6 @@
-# Supermemory Notes For 0G-Mem
+# Supermemory Notes For Ostra Mem
 
-Source reviewed:
+Sources checked:
 
 - https://supermemory.ai/
 - https://github.com/supermemoryai/supermemory
@@ -16,32 +16,29 @@ Supermemory is useful as a reference because it packages memory as a developer p
 - MCP tools such as memory, recall, and context
 - plugins for agent tools
 
-## What 0G-Mem Takes From This
+## What Ostra Mem Takes From This
 
-0G-Mem adopts the ergonomics, not the product:
+Ostra Mem adopts the ergonomics, not the product:
 
-- `sdk.ogmem.memory.add(...)`
-- `sdk.ogmem.profile.get(...)`
-- `sdk.ogmem.context.forTradePlan(...)`
+- `sdk.ostraMem.memory.add(...)`
+- `sdk.vault.ingestDocument(...)`
+- `sdk.ostraMem.profile.get(...)`
+- `sdk.ostraMem.context.forTradePlan(...)`
 - local file mode for demos
 - HTTP adapter that can later be wrapped by MCP
 
 The key idea is one-call context before an agent takes action.
 
-## What 0G-Mem Does Differently
+## What Ostra Mem Does Differently
 
-0G-Mem is operational infrastructure for trading agents, not a general personal memory app.
+Ostra Mem is operational infrastructure for company agents that need private enterprise memory.
 
 Differences:
 
-- memory types are trading-agent specific
-- risk review is a first-class module
-- transaction calldata is decoded before execution
-- failure reflection is tied to trade outcomes
-- policy changes are not automatically accepted when they increase risk
-- proof hashes can be anchored on 0G Chain
-- memory artifacts can be stored on 0G Storage
-- private reasoning can run through 0G Compute Router / Private Computer
+- memory types support enterprise documents, policies, notes, and agent context
+- enterprise documents are chunked into an Obsidian-like vault graph
+- private memory hashes can be anchored on Zama Sepolia
+- raw memory stays encrypted off-chain instead of being published to a public index
 
 ## What We Should Not Build For This Hackathon
 
@@ -53,5 +50,5 @@ Do not build:
 - a leaderboard for tracking other people's private agents
 - a demo trading bot
 
-Those would dilute the hackathon story. The sharp demo is: existing trading agents plug into 0G-Mem to remember, review, learn, and prove.
+Those would dilute the hackathon story. The sharp demo is: company agents plug into Ostra Mem to use private memory, graph retrieval, and Zama hash anchoring.
 

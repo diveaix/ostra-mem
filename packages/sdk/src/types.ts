@@ -11,7 +11,10 @@ export const memoryKindSchema = z.enum([
   "blocked_action",
   "failure_lesson",
   "human_feedback",
-  "protocol_profile"
+  "protocol_profile",
+  "enterprise_document",
+  "document_chunk",
+  "vault_link"
 ]);
 
 export type MemoryKind = z.infer<typeof memoryKindSchema>;
@@ -136,11 +139,12 @@ export type ProofRecordResult = {
   decisionId?: string;
 };
 
-export type ZeroGMemConfig = {
+export type OstraMemConfig = {
   agentId?: string;
   storage?: {
-    provider: "local" | "file" | "0g";
+    provider: "local" | "file" | "file-encrypted" | "0g";
     path?: string;
+    vaultKey?: string;
     indexerRpc?: string;
     evmRpc?: string;
     privateKey?: string;
@@ -157,4 +161,12 @@ export type ZeroGMemConfig = {
     registryAddress?: string;
     privateKey?: string;
   };
+  zama?: {
+    provider: "local" | "zama";
+    rpcUrl?: string;
+    privateKey?: string;
+    memoryRegistryAddress?: string;
+  };
 };
+
+export type ZeroGMemConfig = OstraMemConfig;

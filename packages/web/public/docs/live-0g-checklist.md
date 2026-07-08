@@ -1,6 +1,6 @@
-# Live 0G Checklist
+# Legacy 0G Checklist
 
-Use the full repo checklist at `docs/LIVE_0G_CHECKLIST.md`.
+Use the full repo checklist at `docs/LIVE_0G_CHECKLIST.md`. This is optional legacy 0G adapter documentation, not the current Ostra Mem submission path.
 
 Required live values:
 
@@ -10,8 +10,8 @@ Required live values:
 - `OG_COMPUTE_API_KEY`
 - `OG_COMPUTE_BASE_URL`
 - `OG_COMPUTE_MODEL`
-- `AEGIS_REGISTRY_ADDRESS`
+- `OG_PROOF_REGISTRY_ADDRESS`
 - `OG_CHAIN_PRIVATE_KEY`
 
-The local demo works without credentials. Live 0G Storage, Compute Router, and Chain proof anchoring require funded keys and deployed contract addresses.
+The current Ostra Mem demo works without these credentials. Legacy 0G Storage, Compute Router, and Chain proof anchoring require funded keys and deployed contract addresses.
 

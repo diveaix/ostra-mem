@@ -5,8 +5,12 @@ packages/*/dist/
 .env.*
 !.env.example
 npm-debug.log*
+*.mhtml
 coverage/
 .0g-mem/
+.ostra-mem/
+.zama-mem/
+packages/*/.ostra-mem/
 output/
 .agents/
 skills-lock.json

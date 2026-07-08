@@ -1,5 +1,5 @@
 {
-  "name": "@0g-mem/backend",
+  "name": "@ostra-mem/backend",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,9 +10,9 @@
     "dev": "tsx src/server.ts"
   },
   "dependencies": {
-    "@0g-mem/api": "file:../api",
-    "@0g-mem/mcp": "file:../mcp",
-    "@0g-mem/sdk": "file:../sdk"
+    "@ostra-mem/api": "file:../api",
+    "@ostra-mem/mcp": "file:../mcp",
+    "@ostra-mem/sdk": "file:../sdk"
   },
   "devDependencies": {
     "@types/node": "^22.13.14",

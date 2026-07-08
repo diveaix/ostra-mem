@@ -1,9 +1,6 @@
 # Agent Connection Guide
 
-0G-Mem is not the trading agent. It is the memory, risk, learning, and proof layer that a trading agent calls before and after execution.
-
-Agents can connect in three ways. In hosted/API mode, every request must be tied
-to a verified user through an API key.
+Ostra Mem is the private memory layer that company agents call when they need scoped access to internal documents, notes, policies, and runbooks.
 
 Security rule:
 
@@ -18,34 +15,33 @@ Dashboard flow:
 2. Enter email.
 3. Open the confirmation link.
 4. Create an API key.
-5. Put that key in the agent runtime as `OGMEM_API_KEY`.
+5. Put that key in the agent runtime as `OSTRA_MEM_API_KEY`.
 
 ## 1. TypeScript SDK
 
-Best for agents running in Node.js or a TypeScript service.
-
 ```ts
-import { ZeroGMemApiClient } from "@0g-mem/sdk";
+import { OstraMemApiClient } from "@ostra-mem/sdk";
 
-const client = new ZeroGMemApiClient({
-  apiKey: process.env.OGMEM_API_KEY!,
+const client = new OstraMemApiClient({
+  apiKey: process.env.OSTRA_MEM_API_KEY!,
   baseUrl: "http://127.0.0.1:8787"
 });
 
-await client.memory.add(memory);
-const context = await client.context.forTradePlan(plan);
-const review = await client.aegis.risk.reviewPlan(plan);
+await client.vault.ingestDocument({
+  agentId: "enterprise-vault",
+  title: "Internal Runbook",
+  text: "Escalate production incidents through [[Security Policy]].",
+  anchor: true
+});
 
-if (review.verdict.decision === "BLOCK") {
-  throw new Error(review.verdict.reason);
-}
+const graph = await client.vault.graph({ agentId: "enterprise-vault" });
+const profile = await client.profile.get({
+  agentId: "enterprise-vault",
+  query: "security escalation"
+});
 ```
 
-The agent keeps its own wallet, executor, strategy, and market data. It calls 0G-Mem before execution and records outcomes afterward.
-
 ## 2. REST API
-
-Best for Python agents, hosted workers, workflow engines, or services that do not run TypeScript directly.
 
 Start the API:
 
@@ -58,28 +54,22 @@ Useful calls:
 ```text
 GET  http://127.0.0.1:8787/health
 POST http://127.0.0.1:8787/v1/memory
-GET  http://127.0.0.1:8787/v1/profile?agentId=trader-01&query=vault
-POST http://127.0.0.1:8787/v1/context
-POST http://127.0.0.1:8787/v1/review-plan
-POST http://127.0.0.1:8787/v1/trades/outcome
-POST http://127.0.0.1:8787/v1/learning/reflect
+POST http://127.0.0.1:8787/v1/vault/ingest
+GET  http://127.0.0.1:8787/v1/vault/graph?agentId=enterprise-vault
+GET  http://127.0.0.1:8787/v1/profile?agentId=enterprise-vault&query=security
+GET  http://127.0.0.1:8787/v1/zama/status
 ```
 
-Minimal review request:
+Minimal vault ingest:
 
 ```bash
-curl -X POST http://127.0.0.1:8787/v1/review-plan \
-  -H "Authorization: Bearer $OGMEM_API_KEY" \
+curl -X POST http://127.0.0.1:8787/v1/vault/ingest \
+  -H "Authorization: Bearer $OSTRA_MEM_API_KEY" \
   -H "Content-Type: application/json" \
-  --data @packages/sdk/examples/fixtures/risky-plan.json
+  --data '{"agentId":"enterprise-vault","title":"Runbook","text":"Use [[Security Policy]] for escalation."}'
 ```
 
-The API includes CORS headers and secure session cookies so the web dashboard can
-call it during a local demo.
-
 ## 3. Streamable HTTP MCP
-
-Best for LLM agents that discover tools through Model Context Protocol.
 
 Start the API and MCP HTTP server locally:
 
@@ -94,25 +84,17 @@ Local development URL:
 http://127.0.0.1:8788/mcp
 ```
 
-Hosted URL shape:
-
-```text
-https://0gmem-backend-production.up.railway.app/mcp
-```
-
-The MCP server reads the user or agent API key from `Authorization: Bearer ...`.
-In clients such as Codex, set the bearer token environment variable to
-`OGMEM_API_KEY`, then put the actual key in that environment variable.
-
 Available MCP tools:
 
 ```text
-0gmem_add_memory
-0gmem_get_profile
-0gmem_context_for_trade_plan
-aegis_review_plan
-0gmem_record_outcome
-0gmem_reflect_failure
+ostramem_add_memory
+ostramem_get_profile
+ostramem_context_for_trade_plan
+ostramem_record_outcome
+ostramem_reflect_failure
+ostramem_ingest_document
+ostramem_vault_graph
+ostramem_zama_status
 ```
 
 Example Streamable HTTP MCP client config:
@@ -120,43 +102,30 @@ Example Streamable HTTP MCP client config:
 ```json
 {
   "mcpServers": {
-    "0gmem": {
+    "ostramem": {
       "type": "streamable-http",
-      "url": "https://0gmem-backend-production.up.railway.app/mcp",
-      "bearerTokenEnvVar": "OGMEM_API_KEY"
+      "url": "https://ostramem-backend-production.up.railway.app/mcp",
+      "bearerTokenEnvVar": "OSTRA_MEM_API_KEY"
     }
   }
 }
 ```
 
-Optional local stdio fallback:
+## Agent Memory Workflow
 
-```bash
-OGMEM_API_KEY=ogm_live_... npm run mcp:dev
-```
+1. Agent stores structured memory or ingests a document.
+2. Ostra Mem chunks documents and extracts wiki-style links.
+3. Agent fetches profile or vault graph context.
+4. Agent uses its own model/tooling to act.
+5. Optional Zama Sepolia anchoring stores hash-only memory commitments.
 
-The stdio server can fall back to local file memory for offline demos. The
-Streamable HTTP server does not use local fallback because remote clients need
-API-key scoped workspace data.
+## Live Zama Mode
 
-## Pre-Execution Workflow
+Local mode is the demo path. Live Zama memory anchoring requires:
 
-1. Agent prepares a transaction plan.
-2. Agent calls `profile` or `context`.
-3. Agent calls Aegis risk review.
-4. 0G-Mem returns `ALLOW`, `WARN`, `BLOCK`, or `REQUIRE_HUMAN`.
-5. Agent executes only when its own policy allows it.
-6. Agent records outcome.
-7. Failure lessons become future memory.
-8. Proof hashes are stored locally or anchored on 0G Chain in live mode.
+- `ZAMA_RPC_URL`
+- funded `ZAMA_PRIVATE_KEY`
+- deployed `ConfidentialMemoryRegistry`
+- `OSTRA_MEM_VAULT_KEY` for encrypted-at-rest file storage
 
-## Live 0G Mode
-
-Local mode is the demo path. Live 0G mode requires:
-
-- 0G Storage credentials and funded private key
-- 0G Compute Router API key
-- deployed `AegisProofRegistry`
-- 0G Chain private key for proof anchoring
-
-See `docs/LIVE_0G_CHECKLIST.md`.
+See `packages/web/public/docs/zama-checklist.md`.

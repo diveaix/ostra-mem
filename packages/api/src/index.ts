@@ -1,20 +1,22 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { URL } from "node:url";
 import {
-  JsonFileStorage,
-  ZeroGMem,
+  OstraMem,
   type AgentProfile,
   type ContextResult,
   type MemoryInput,
   type MemoryRecord,
   type TradePlan,
-  type ZeroGMemConfig
-} from "@0g-mem/sdk";
+  type VaultDocumentInput,
+  type VaultGraph,
+  type VaultIngestResult,
+  type OstraMemConfig
+} from "@ostra-mem/sdk";
 import { AuthError, JsonAuthStore, type AuthPrincipal } from "./auth.js";
 
 export type ApiOptions = {
-  sdk?: ZeroGMem;
-  config?: ZeroGMemConfig;
+  sdk?: OstraMem;
+  config?: OstraMemConfig;
   memoryPath?: string;
   authPath?: string;
   auth?: {
@@ -24,7 +26,7 @@ export type ApiOptions = {
 };
 
 type ApiContext = {
-  sdk: ZeroGMem;
+  sdk: OstraMem;
   auth: JsonAuthStore;
   appUrl: string;
   returnDevVerificationToken: boolean;
@@ -32,22 +34,24 @@ type ApiContext = {
 
 type HeaderValue = string | number | readonly string[];
 
-const SESSION_COOKIE = "ogmem_session";
+const SESSION_COOKIE = "ostramem_session";
 const DEFAULT_APP_URL = "http://127.0.0.1:5173";
 
-export function create0GMemApi(options: ApiOptions = {}) {
-  const sdk =
-    options.sdk ??
-    new ZeroGMem(
-      options.config ?? {},
-      new JsonFileStorage(options.memoryPath ?? ".0g-mem/api-memory.json")
-    );
+export function createOstraMemApi(options: ApiOptions = {}) {
+  const sdk = options.sdk ?? new OstraMem(createConfigWithStorage(options));
   const context: ApiContext = {
     sdk,
     auth: new JsonAuthStore(
-      options.authPath ?? process.env.OG_MEM_API_AUTH_PATH ?? ".0g-mem/auth.json"
+      options.authPath ??
+        process.env.OSTRA_MEM_API_AUTH_PATH ??
+        process.env.OG_MEM_API_AUTH_PATH ??
+        ".ostra-mem/auth.json"
     ),
-    appUrl: options.auth?.appUrl ?? process.env.OG_MEM_APP_URL ?? DEFAULT_APP_URL,
+    appUrl:
+      options.auth?.appUrl ??
+      process.env.OSTRA_MEM_APP_URL ??
+      process.env.OG_MEM_APP_URL ??
+      DEFAULT_APP_URL,
     returnDevVerificationToken:
       options.auth?.returnDevVerificationToken ??
       process.env.OG_MEM_RETURN_DEV_TOKENS !== "false"
@@ -69,6 +73,36 @@ export function create0GMemApi(options: ApiOptions = {}) {
   });
 }
 
+function createConfigWithStorage(options: ApiOptions): OstraMemConfig {
+  const config = options.config ?? {};
+  const memoryPath = options.memoryPath ?? ".ostra-mem/api-memory.json";
+
+  if (!config.storage) {
+    return {
+      ...config,
+      storage: {
+        provider: "file",
+        path: memoryPath
+      }
+    };
+  }
+
+  if (
+    (config.storage.provider === "file" || config.storage.provider === "file-encrypted") &&
+    !config.storage.path
+  ) {
+    return {
+      ...config,
+      storage: {
+        ...config.storage,
+        path: memoryPath
+      }
+    };
+  }
+
+  return config;
+}
+
 async function routeRequest(
   context: ApiContext,
   request: IncomingMessage,
@@ -79,7 +113,7 @@ async function routeRequest(
   const method = request.method ?? "GET";
 
   if (method === "GET" && path === "/health") {
-    sendJson(request, response, 200, { ok: true, service: "0g-mem-api" });
+    sendJson(request, response, 200, { ok: true, service: "ostra-mem-api" });
     return;
   }
 
@@ -190,7 +224,7 @@ async function routeRequest(
   if (method === "POST" && path === "/memory") {
     const principal = await requirePrincipal(context, request);
     const body = await readJson<MemoryInput>(request);
-    const memory = await context.sdk.ogmem.memory.add(scopeMemoryInput(principal, body));
+    const memory = await context.sdk.ostraMem.memory.add(scopeMemoryInput(principal, body));
     sendJson(request, response, 201, {
       memory: unScopeMemoryRecord(principal, memory)
     });
@@ -204,7 +238,7 @@ async function routeRequest(
       const query = url.searchParams.get("query")?.toLowerCase().trim();
       const limit = Number(url.searchParams.get("limit") ?? "100");
       const prefix = `${principal.user.id}:`;
-      const memories = (await context.sdk.ogmem.memory.listAll())
+      const memories = (await context.sdk.ostraMem.memory.listAll())
         .filter((memory) => memory.agentId.startsWith(prefix))
         .filter((memory) => !query || memoryMatchesQuery(memory, query))
         .slice(0, Number.isFinite(limit) && limit > 0 ? limit : 100);
@@ -214,7 +248,7 @@ async function routeRequest(
       return;
     }
 
-    const memories = await context.sdk.ogmem.memory.search({
+    const memories = await context.sdk.ostraMem.memory.search({
       agentId: scopeAgentId(principal, agentId),
       query: url.searchParams.get("query") ?? undefined,
       limit: Number(url.searchParams.get("limit") ?? "10")
@@ -225,18 +259,43 @@ async function routeRequest(
     return;
   }
 
+  if (method === "POST" && path === "/vault/ingest") {
+    const principal = await requirePrincipal(context, request);
+    const body = await readJson<VaultDocumentInput>(request);
+    const result = await context.sdk.vault.ingestDocument({
+      ...body,
+      agentId: scopeAgentId(principal, body.agentId)
+    });
+    sendJson(request, response, 201, {
+      vault: unScopeVaultIngestResult(principal, result)
+    });
+    return;
+  }
+
+  if (method === "GET" && path === "/vault/graph") {
+    const principal = await requirePrincipal(context, request);
+    const agentId = url.searchParams.get("agentId");
+    if (!agentId) {
+      sendJson(request, response, 400, { error: "agentId query param is required" });
+      return;
+    }
+    const graph = await context.sdk.vault.graph(scopeAgentId(principal, agentId));
+    sendJson(request, response, 200, { graph: unScopeVaultGraph(graph) });
+    return;
+  }
+
   const memoryMatch = /^\/memory\/([^/]+)$/.exec(path);
   if (method === "DELETE" && memoryMatch) {
     const principal = await requirePrincipal(context, request);
     const memoryId = decodeURIComponent(memoryMatch[1]);
-    const memory = (await context.sdk.ogmem.memory.listAll()).find(
+    const memory = (await context.sdk.ostraMem.memory.listAll()).find(
       (item) => item.id === memoryId
     );
     if (!memory || !memory.agentId.startsWith(`${principal.user.id}:`)) {
       sendJson(request, response, 404, { error: "Memory not found" });
       return;
     }
-    const deleted = await context.sdk.ogmem.memory.delete(memoryId);
+    const deleted = await context.sdk.ostraMem.memory.delete(memoryId);
     sendJson(request, response, 200, {
       memory: deleted ? unScopeMemoryRecord(principal, deleted) : undefined
     });
@@ -251,7 +310,7 @@ async function routeRequest(
       return;
     }
 
-    const profile = await context.sdk.ogmem.profile.get({
+    const profile = await context.sdk.ostraMem.profile.get({
       agentId: scopeAgentId(principal, agentId),
       query: url.searchParams.get("query") ?? undefined,
       limit: Number(url.searchParams.get("limit") ?? "10")
@@ -265,7 +324,7 @@ async function routeRequest(
   if (method === "POST" && path === "/context") {
     const principal = await requirePrincipal(context, request);
     const plan = await readJson<TradePlan>(request);
-    const contextResult = await context.sdk.ogmem.context.forTradePlan(
+    const contextResult = await context.sdk.ostraMem.context.forTradePlan(
       scopeTradePlan(principal, plan)
     );
     sendJson(request, response, 200, {
@@ -274,25 +333,9 @@ async function routeRequest(
     return;
   }
 
-  if (method === "POST" && path === "/review-plan") {
-    const principal = await requirePrincipal(context, request);
-    const plan = scopeTradePlan(principal, await readJson<TradePlan>(request));
-    const contextResult = await context.sdk.ogmem.context.forTradePlan(plan);
-    const verdict = await context.sdk.aegis.risk.reviewPlan({
-      ...plan,
-      context: contextResult
-    });
-    const proof = await context.sdk.proofs.recordDecision({
-      agentId: plan.agentId,
-      planHash: verdict.planHash,
-      reportHash: verdict.reportHash,
-      decision: verdict.decision
-    });
-    sendJson(request, response, 200, {
-      context: unScopeContext(principal, contextResult),
-      verdict,
-      proof
-    });
+  if (method === "GET" && path === "/zama/status") {
+    await requirePrincipal(context, request);
+    sendJson(request, response, 200, { status: context.sdk.zama.status() });
     return;
   }
 
@@ -409,6 +452,22 @@ function unScopeContext(principal: AuthPrincipal, context: ContextResult): Conte
     ...context,
     memories: context.memories.map((memory) => unScopeMemoryRecord(principal, memory))
   };
+}
+
+function unScopeVaultIngestResult(
+  principal: AuthPrincipal,
+  result: VaultIngestResult
+): VaultIngestResult {
+  return {
+    ...result,
+    document: unScopeMemoryRecord(principal, result.document),
+    chunks: result.chunks.map((memory) => unScopeMemoryRecord(principal, memory)),
+    graph: unScopeVaultGraph(result.graph)
+  };
+}
+
+function unScopeVaultGraph(graph: VaultGraph): VaultGraph {
+  return graph;
 }
 
 function memoryMatchesQuery(memory: MemoryRecord, query: string): boolean {

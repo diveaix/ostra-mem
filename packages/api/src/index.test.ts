@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
-import { create0GMemApi } from "./index.js";
+import { createOstraMemApi } from "./index.js";
 
 let tempDir: string | undefined;
 
@@ -13,10 +13,10 @@ afterEach(async () => {
   }
 });
 
-describe("0G-Mem API", () => {
-  it("requires API key ownership for memory and review routes", async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "0g-mem-api-"));
-    const server = create0GMemApi({
+describe("Ostra Mem API", () => {
+  it("requires API key ownership for memory and vault routes", async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "ostra-mem-api-"));
+    const server = createOstraMemApi({
       authPath: join(tempDir, "auth.json"),
       memoryPath: join(tempDir, "memory.json")
     });
@@ -31,7 +31,6 @@ describe("0G-Mem API", () => {
       const firstKey = await createApiKey(baseUrl, "first@example.com");
       const secondKey = await createApiKey(baseUrl, "second@example.com");
       const token = "0x1111111111111111111111111111111111111111";
-      const spender = "0x2222222222222222222222222222222222222222";
 
       const unauthenticatedResponse = await fetch(`${baseUrl}/memory`, {
         method: "POST",
@@ -77,6 +76,44 @@ describe("0G-Mem API", () => {
         expect.objectContaining({ agentId: "agent", title: "Policy" })
       ]);
 
+      const vaultIngestResponse = await fetch(`${baseUrl}/v1/vault/ingest`, {
+        method: "POST",
+        headers: authorizedHeaders(firstKey),
+        body: JSON.stringify({
+          agentId: "enterprise-vault",
+          title: "Enterprise Runbook",
+          text: "Private runbook with [[Policy]] references. ".repeat(40),
+          tags: ["enterprise"],
+          chunkSize: 320,
+          chunkOverlap: 32
+        })
+      });
+      const vaultIngest = (await vaultIngestResponse.json()) as {
+        vault: {
+          document: { agentId: string; kind: string; title: string };
+          chunks: Array<{ kind: string }>;
+          graph: { nodes: unknown[]; edges: Array<{ label: string }> };
+        };
+      };
+      expect(vaultIngestResponse.status).toBe(201);
+      expect(vaultIngest.vault.document).toMatchObject({
+        agentId: "enterprise-vault",
+        kind: "enterprise_document",
+        title: "Enterprise Runbook"
+      });
+      expect(vaultIngest.vault.chunks.length).toBeGreaterThan(1);
+      expect(vaultIngest.vault.graph.edges.some((edge) => edge.label === "contains")).toBe(true);
+
+      const vaultGraphResponse = await fetch(
+        `${baseUrl}/v1/vault/graph?agentId=enterprise-vault`,
+        { headers: { Authorization: `Bearer ${firstKey}` } }
+      );
+      const vaultGraph = (await vaultGraphResponse.json()) as {
+        graph: { nodes: unknown[]; edges: Array<{ label: string }> };
+      };
+      expect(vaultGraphResponse.status).toBe(200);
+      expect(vaultGraph.graph.nodes.length).toBe(vaultIngest.vault.chunks.length + 1);
+
       const isolatedMemoryResponse = await fetch(`${baseUrl}/v1/memory?limit=20`, {
         headers: { Authorization: `Bearer ${secondKey}` }
       });
@@ -115,41 +152,18 @@ describe("0G-Mem API", () => {
       expect(secondProfileResponse.status).toBe(200);
       expect(secondProfile.profile.summary.policies).toEqual([]);
 
-      const data =
-        "0x095ea7b3" +
-        "000000000000000000000000" +
-        spender.slice(2) +
-        "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-      const plan = {
-        agentId: "agent",
-        intent: "approve risky spender",
-        txs: [
-          {
-            chainId: 16602,
-            to: token,
-            data,
-            value: "0"
-          }
-        ],
-        metadata: {}
-      };
-
-      const reviewResponse = await fetch(`${baseUrl}/v1/review-plan`, {
-        method: "POST",
-        headers: authorizedHeaders(firstKey),
-        body: JSON.stringify(plan)
+      const zamaStatusResponse = await fetch(`${baseUrl}/v1/zama/status`, {
+        headers: { Authorization: `Bearer ${firstKey}` }
       });
-      const review = (await reviewResponse.json()) as {
-        context: { memories: Array<{ agentId: string; title: string }> };
-        verdict: { decision: string; decodedTransactions: Array<{ kind: string }> };
-        proof: { provider: string };
+      const zamaStatus = (await zamaStatusResponse.json()) as {
+        status: { enabled: boolean; provider: string; canSubmitTransactions: boolean };
       };
-
-      expect(reviewResponse.status).toBe(200);
-      expect(review.context.memories[0]?.agentId).toBe("agent");
-      expect(review.verdict.decision).toBe("BLOCK");
-      expect(review.verdict.decodedTransactions[0]?.kind).toBe("erc20_approve");
-      expect(review.proof.provider).toBe("local");
+      expect(zamaStatusResponse.status).toBe(200);
+      expect(zamaStatus.status).toMatchObject({
+        enabled: false,
+        provider: "local",
+        canSubmitTransactions: false
+      });
 
       const deleteResponse = await fetch(
         `${baseUrl}/v1/memory/${encodeURIComponent(memory.memory.id)}`,

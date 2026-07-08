@@ -2,26 +2,29 @@
 import { existsSync, readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { resolve } from "node:path";
-import { create0GMemApi } from "@0g-mem/api";
-import { create0GMemMcpHttpApp } from "@0g-mem/mcp/http-app";
-import type { ZeroGMemConfig } from "@0g-mem/sdk";
+import { createOstraMemApi } from "@ostra-mem/api";
+import { createOstraMemMcpHttpApp } from "@ostra-mem/mcp/http-app";
+import type { OstraMemConfig } from "@ostra-mem/sdk";
 
 loadEnvFile();
 
 const port = Number(process.env.PORT ?? "8787");
 const apiBaseUrl = publicApiBaseUrl();
-const memoryPath = process.env.OG_MEM_API_MEMORY_PATH ?? ".0g-mem/api-memory.json";
-const config = createConfigFromEnv();
+const memoryPath =
+  process.env.OSTRA_MEM_API_MEMORY_PATH ??
+  process.env.OG_MEM_API_MEMORY_PATH ??
+  ".ostra-mem/api-memory.json";
+const config = createConfigFromEnv(memoryPath);
 
-const apiServer = create0GMemApi({
+const apiServer = createOstraMemApi({
   config,
   memoryPath,
   auth: {
-    appUrl: process.env.OG_MEM_APP_URL,
+    appUrl: process.env.OSTRA_MEM_APP_URL ?? process.env.OG_MEM_APP_URL,
     returnDevVerificationToken: process.env.OG_MEM_RETURN_DEV_TOKENS !== "false"
   }
 });
-const mcpApp = create0GMemMcpHttpApp({ apiBaseUrl });
+const mcpApp = createOstraMemMcpHttpApp({ apiBaseUrl });
 
 const server = createServer((request, response) => {
   const url = request.url ?? "/";
@@ -30,7 +33,7 @@ const server = createServer((request, response) => {
     response.writeHead(200, { "Content-Type": "application/json" });
     response.end(JSON.stringify({
       ok: true,
-      service: "0g-mem-backend",
+      service: "ostra-mem-backend",
       rest: "/v1",
       mcp: "/mcp",
       apiBaseUrl
@@ -47,16 +50,19 @@ const server = createServer((request, response) => {
 });
 
 server.listen(port, () => {
-  console.log(`0G-Mem backend listening on port ${port}`);
+  console.log(`Ostra Mem backend listening on port ${port}`);
   console.log(`REST API available at ${apiBaseUrl}/v1`);
   console.log(`Streamable HTTP MCP available at ${apiBaseUrl}/mcp`);
   if (config.chain?.provider === "0g") {
     console.log(`0G proof registry enabled at ${config.chain.registryAddress}`);
   }
+  if (config.zama?.provider === "zama") {
+    console.log(`Zama memory anchoring enabled at ${config.zama.memoryRegistryAddress}`);
+  }
 });
 
 function publicApiBaseUrl() {
-  if (process.env.OGMEM_API_URL) return process.env.OGMEM_API_URL.replace(/\/$/, "");
+  if (process.env.OSTRA_MEM_API_URL) return process.env.OSTRA_MEM_API_URL.replace(/\/$/, "");
   if (process.env.OG_MEM_API_URL) return process.env.OG_MEM_API_URL.replace(/\/$/, "");
   if (process.env.RAILWAY_PUBLIC_DOMAIN) {
     return `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
@@ -89,18 +95,26 @@ function unquoteEnvValue(value: string) {
   return value;
 }
 
-function createConfigFromEnv(): ZeroGMemConfig {
-  const config: ZeroGMemConfig = {};
+function createConfigFromEnv(memoryPath: string): OstraMemConfig {
+  const config: OstraMemConfig = {};
+
+  if (process.env.OSTRA_MEM_VAULT_KEY) {
+    config.storage = {
+      provider: "file-encrypted",
+      path: memoryPath,
+      vaultKey: process.env.OSTRA_MEM_VAULT_KEY
+    };
+  }
 
   if (
     process.env.OG_EVM_RPC &&
-    process.env.AEGIS_REGISTRY_ADDRESS &&
+    process.env.OG_PROOF_REGISTRY_ADDRESS &&
     process.env.OG_CHAIN_PRIVATE_KEY
   ) {
     config.chain = {
       provider: "0g",
       rpcUrl: process.env.OG_EVM_RPC,
-      registryAddress: process.env.AEGIS_REGISTRY_ADDRESS,
+      registryAddress: process.env.OG_PROOF_REGISTRY_ADDRESS,
       privateKey: process.env.OG_CHAIN_PRIVATE_KEY
     };
   }
@@ -111,6 +125,19 @@ function createConfigFromEnv(): ZeroGMemConfig {
       apiKey: process.env.OG_COMPUTE_API_KEY,
       baseUrl: process.env.OG_COMPUTE_BASE_URL,
       model: process.env.OG_COMPUTE_MODEL
+    };
+  }
+
+  if (
+    process.env.ZAMA_RPC_URL &&
+    process.env.ZAMA_PRIVATE_KEY &&
+    process.env.ZAMA_MEMORY_REGISTRY_ADDRESS
+  ) {
+    config.zama = {
+      provider: "zama",
+      rpcUrl: process.env.ZAMA_RPC_URL,
+      privateKey: process.env.ZAMA_PRIVATE_KEY,
+      memoryRegistryAddress: process.env.ZAMA_MEMORY_REGISTRY_ADDRESS
     };
   }
 

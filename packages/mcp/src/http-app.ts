@@ -1,19 +1,19 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { create0GMemMcpServer } from "./create-server.js";
+import { createOstraMemMcpServer } from "./create-server.js";
 
 type McpHttpRequest = IncomingMessage & { body?: unknown };
 type McpHttpResponse = ServerResponse;
 
-export type Create0GMemMcpHttpAppOptions = {
+export type CreateOstraMemMcpHttpAppOptions = {
   apiBaseUrl?: string;
 };
 
-export function create0GMemMcpHttpApp(options: Create0GMemMcpHttpAppOptions = {}) {
+export function createOstraMemMcpHttpApp(options: CreateOstraMemMcpHttpAppOptions = {}) {
   const apiBaseUrl =
     options.apiBaseUrl ??
-    process.env.OGMEM_API_URL ??
+    process.env.OSTRA_MEM_API_URL ??
     process.env.OG_MEM_API_URL ??
     "http://127.0.0.1:8787";
   const app = createMcpExpressApp({
@@ -28,14 +28,14 @@ export function create0GMemMcpHttpApp(options: Create0GMemMcpHttpAppOptions = {}
 
   app.post("/mcp", async (req: McpHttpRequest, res: McpHttpResponse) => {
     setCorsHeaders(res);
-    const apiKey = readBearerToken(req) ?? process.env.OGMEM_API_KEY ?? process.env.OG_MEM_API_KEY;
+    const apiKey = readBearerToken(req) ?? process.env.OSTRA_MEM_API_KEY ?? process.env.OG_MEM_API_KEY;
 
     if (!apiKey) {
-      sendJsonRpcError(res, 401, -32001, "Missing bearer token. Use an 0G-Mem API key.");
+      sendJsonRpcError(res, 401, -32001, "Missing bearer token. Use an Ostra Mem API key.");
       return;
     }
 
-    const server = create0GMemMcpServer({
+    const server = createOstraMemMcpServer({
       apiBaseUrl,
       apiKey,
       allowLocalFallback: false
@@ -52,7 +52,7 @@ export function create0GMemMcpHttpApp(options: Create0GMemMcpHttpAppOptions = {}
         void server.close();
       });
     } catch (error) {
-      console.error("Error handling 0G-Mem MCP request:", error);
+      console.error("Error handling Ostra Mem MCP request:", error);
       if (!res.headersSent) {
         sendJsonRpcError(res, 500, -32603, "Internal server error");
       }

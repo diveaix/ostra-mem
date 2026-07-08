@@ -1,157 +1,113 @@
-# 0G-Mem SDK Hackathon Submission
+# Ostra Mem SDK Hackathon Submission
 
 ## One-Liner
 
-0G-Mem is a decentralized memory, risk, learning, and proof SDK for autonomous trading agents that already have their own strategy and execution systems.
+Ostra Mem is an Obsidian-like private memory vault for company AI agents, with encrypted-at-rest enterprise knowledge and hash-only Zama Sepolia anchoring.
 
 ## What We Built
 
-0G-Mem gives trading agents the missing infrastructure around execution:
+- encrypted enterprise vault storage for company documents, policies, runbooks, and agent memory
+- document chunking and `[[wiki link]]` graph retrieval
+- TypeScript SDK, REST API, and Streamable HTTP MCP tools
+- API-key scoped workspace access for agent clients
+- web dashboard for vault ingest, graph browsing, memory provenance, API keys, and connection guidance
+- Zama Sepolia memory registry for private memory hash commitments
+- encrypted local file storage through `OSTRA_MEM_VAULT_KEY`
 
-- persistent operational memory for skills, strategies, policies, trades, failures, feedback, and protocol profiles
-- Aegis pre-execution risk review for transaction plans
-- EVM calldata decoding for common ERC20 approvals and transfers
-- private reasoning hooks through 0G Compute Router / 0G Private Computer
-- failure reflection that stores future lessons without silently loosening policy
-- proof hash recording for 0G Chain
-- HTTP adapter for non-TypeScript agents
-- MCP server for LLM agent clients
-- landing page and operator dashboard for the hackathon demo
-- local file mode for demos and 0G adapters for live infrastructure
-
-This is not a trading agent, copy-trading product, leaderboard, or mock bot. The product boundary is the SDK that other agents call.
+The product is private memory infrastructure for company agents. Raw memory stays off-chain; Zama Sepolia receives only hashes and storage URIs.
 
 ## Why It Matters
 
-Autonomous trading agents can produce technically valid transactions that are still unsafe for the owner, current strategy, or recent failure history. The missing layer is not more alpha. It is memory, safety, learning, and auditability.
+Company agents need memory, but useful memory is often sensitive: escalation paths, customer context, operational runbooks, internal policies, and incident notes. Ostra Mem lets teams give agents usable private context without publishing the data on-chain.
 
-0G-Mem lets an agent ask:
+Ostra Mem lets an agent ask:
 
-1. What am I allowed to do?
-2. What went wrong before?
-3. Does this transaction plan violate policy?
-4. Should I execute, warn, block, or ask a human?
-5. Can the owner later verify what I saw and decided?
+1. What private company context am I allowed to use?
+2. What documents, notes, and policies are relevant?
+3. How are those documents linked?
+4. Can the owner later verify that a private memory hash was anchored?
 
-## How 0G Is Used
+## How Zama Is Used
 
-### 0G Storage
+### Encrypted Vault Memory
 
-0G Storage is the source of truth for memory objects and risk reports. The SDK ships with local and file-backed storage for development, plus an optional `ZeroGStorageAdapter` that uploads JSON memory artifacts through the official 0G Storage SDK.
+When `OSTRA_MEM_VAULT_KEY` is set, file-backed API/backend/MCP storage uses AES-256-GCM. Plaintext document content is not written to the JSON vault file. The app decrypts only inside the running process for authenticated retrieval.
 
-Source: https://docs.0g.ai/developer-hub/building-on-0g/storage/sdk
+### Zama Sepolia Memory Anchoring
 
-### 0G Compute Router / Private Computer
+`ConfidentialMemoryRegistry.sol` stores only:
 
-0G Compute is used for private risk explanations and failure reflections. The Router is OpenAI-compatible, which keeps the SDK integration simple for agent developers. The current docs list the mainnet Router endpoint as `https://router-api.0g.ai/v1` and show `zai-org/GLM-5-FP8` in the quickstart.
+- `agentId` hash
+- memory hash
+- schema hash
+- storage URI
 
-Sources:
+This proves a private memory pointer existed without exposing the memory itself.
 
-- https://docs.0g.ai/developer-hub/building-on-0g/compute-network/router/overview
-- https://docs.0g.ai/developer-hub/building-on-0g/compute-network/router/quickstart
+Live registry deployment:
 
-### 0G Chain
+```text
+0xC5b79f3c8879B085f25c3ab90668A5ff462DAdb2
+```
 
-0G Chain anchors compact proof records for plan hashes, report hashes, decisions, and actor identity. The Solidity proof registry is in `contracts/AegisProofRegistry.sol`. The live deployment checklist uses 0G Galileo testnet chain ID `16602` and mainnet chain ID `16661`, matching the current contract deployment docs.
+Verified live memory anchor:
 
-Source: https://docs.0g.ai/developer-hub/building-on-0g/contracts-on-0g/deploy-contracts
-
-## Supermemory Check
-
-We inspected Supermemory because its API ergonomics are strong: `add`, `profile`, hybrid search, local mode, MCP tools, and one-call context retrieval. 0G-Mem borrows that developer shape, not the brand or consumer product.
-
-What we adopted:
-
-- one-call `profile.get()` for stable agent profile plus recent dynamic context
-- SDK-first API with optional HTTP adapter
-- local mode for fast development
-- MCP-friendly primitives for future agent clients
-
-What we intentionally did not copy:
-
-- consumer personal memory app
-- general connector platform
-- Supermemory UI/brand
-- unrelated document ingestion features
-
-Source: https://github.com/supermemoryai/supermemory
+```text
+0x369f1bc19ed373c18d0bd60f4021311efc3d28c60602521024cf3dcc130ef21a
+```
 
 ## Demo Commands
-
-Install and verify:
 
 ```bash
 npm install
 npm run build
 npm test
-```
-
-Run the main demo flow:
-
-```bash
-npm run example:flow
-```
-
-Run the HTTP adapter smoke demo:
-
-```bash
+npm run contracts:compile:zama
 npm run api:smoke
 ```
 
 Run the website:
 
 ```bash
+npm run api:dev
 npm run web:dev
 ```
 
-Run the Streamable HTTP MCP server:
+Run Streamable HTTP MCP:
 
 ```bash
 npm run mcp:http:dev
 ```
 
-Run individual demo steps:
-
-```bash
-npm run example:seed
-npm run example:review-file
-npm run example:outcome
-```
-
 ## Demo Story
 
-1. Seed the agent with policy and strategy memory.
-2. Submit a risky transaction plan from an external trading agent client.
-3. 0G-Mem retrieves relevant context.
-4. Aegis decodes the calldata and detects an unlimited approval to an unknown spender.
-5. The SDK returns `BLOCK`, stores a risk report, and records a proof hash.
-6. A failed outcome can be recorded later, producing a reusable failure lesson.
+1. Log in to the dashboard and create an agent API key.
+2. Ingest an enterprise document into the vault.
+3. Show encrypted document records, chunks, and wiki-style graph links.
+4. Fetch the vault graph through SDK, REST, or MCP.
+5. Anchor a private memory hash on Zama Sepolia.
+6. Show that raw company memory stays off-chain.
 
 ## Current MVP Status
 
 Done:
 
+- Ostra Mem rename and yellow visual theme
 - TypeScript monorepo
-- SDK facade with separate modules in one package
-- local/file memory storage
-- optional 0G Storage adapter
-- 0G Compute Router compatible client
-- Aegis risk review
-- EVM calldata decoder
-- trade outcome recording
-- failure learning
-- local and 0G Chain proof recorders
-- HTTP adapter
-- MCP server
-- landing page and operator dashboard
-- examples
-- tests
-- contract source
+- SDK facade with memory, vault, profile, storage, and Zama modules
+- encrypted file storage
+- enterprise document ingest and graph retrieval
+- REST API
+- Streamable HTTP MCP server
+- dashboard with vault workspace
+- `ConfidentialMemoryRegistry` contract
+- Zama Sepolia deployment
+- live memory-anchor transaction
+- tests and build verification
 
-Live steps that require credentials:
+Legacy compatibility kept:
 
-- 0G Storage upload with funded private key
-- 0G Compute Router call with `sk-` API key and balance
-- 0G Chain proof registry deployment
+- original 0G adapters remain in the repo
+- local prepared mode remains available when Zama credentials are not configured
 
-See `docs/LIVE_0G_CHECKLIST.md`.
+See `README.md` and `packages/web/public/docs/zama-checklist.md` for the setup flow.

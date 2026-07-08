@@ -15,7 +15,10 @@ const DYNAMIC_KINDS = new Set([
   "risk_report",
   "blocked_action",
   "failure_lesson",
-  "human_feedback"
+  "human_feedback",
+  "enterprise_document",
+  "document_chunk",
+  "vault_link"
 ]);
 
 export class ProfileClient {

@@ -68,7 +68,7 @@ const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export class JsonAuthStore {
   private state: AuthState | undefined;
 
-  constructor(private readonly filePath = ".0g-mem/auth.json") {}
+  constructor(private readonly filePath = ".ostra-mem/auth.json") {}
 
   async requestLogin(input: {
     email: string;
@@ -272,7 +272,7 @@ export class AuthError extends Error {
 
 export function normalizeEmail(email: string): string {
   const normalized = email.trim().toLowerCase();
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalized)) {
+  if (!/^[^@\s]+@[^@\s]+.[^@\s]+$/.test(normalized)) {
     throw new AuthError("A valid email address is required", 400);
   }
   return normalized;

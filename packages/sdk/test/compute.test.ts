@@ -13,7 +13,7 @@ describe("0G Compute client", () => {
           choices: [
             {
               message: {
-                content: "Private risk review complete."
+                content: "Private memory summary complete."
               }
             }
           ]
@@ -30,13 +30,13 @@ describe("0G Compute client", () => {
     });
 
     const result = await client.generate({
-      purpose: "risk_review",
+      purpose: "memory_summary",
       system: "system",
       user: "user"
     });
 
     expect(result.provider).toBe("0g");
-    expect(result.summary).toBe("Private risk review complete.");
+    expect(result.summary).toBe("Private memory summary complete.");
     expect(fetchMock).toHaveBeenCalledWith(
       "https://router-api-testnet.integratenetwork.work/v1/chat/completions",
       expect.objectContaining({

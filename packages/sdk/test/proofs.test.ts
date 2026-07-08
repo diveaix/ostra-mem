@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  AEGIS_PROOF_REGISTRY_ABI,
+  LEGACY_PROOF_REGISTRY_ABI,
   ProofsClient,
   ZeroGMem,
   createProofRecorderFromConfig
@@ -46,7 +46,7 @@ describe("proof recording", () => {
 
   it("exports the registry ABI", () => {
     expect(
-      AEGIS_PROOF_REGISTRY_ABI.some(
+      LEGACY_PROOF_REGISTRY_ABI.some(
         (entry) => "name" in entry && entry.name === "recordDecision"
       )
     ).toBe(true);

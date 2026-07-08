@@ -6,7 +6,7 @@ import type {
   ZeroGMemConfig
 } from "./types.js";
 
-export const AEGIS_PROOF_REGISTRY_ABI = [
+export const LEGACY_PROOF_REGISTRY_ABI = [
   {
     type: "function",
     name: "recordDecision",
@@ -62,7 +62,7 @@ export class ZeroGChainProofRecorder implements ProofRecorder {
     const wallet = new Wallet(this.options.privateKey, provider);
     const contract = new Contract(
       this.options.registryAddress,
-      AEGIS_PROOF_REGISTRY_ABI,
+      LEGACY_PROOF_REGISTRY_ABI,
       wallet
     );
     const tx = await contract.recordDecision(
@@ -125,7 +125,7 @@ function agentIdToBytes32(agentId: string): string {
 type EthersSdk = {
   Contract: new (
     address: string,
-    abi: typeof AEGIS_PROOF_REGISTRY_ABI,
+    abi: typeof LEGACY_PROOF_REGISTRY_ABI,
     signer: unknown
   ) => {
     recordDecision(

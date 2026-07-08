@@ -1,10 +1,10 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { create0GMemApi } from "../src/index.js";
+import { createOstraMemApi } from "../src/index.js";
 
-const tempDir = await mkdtemp(join(tmpdir(), "0g-mem-api-smoke-"));
-const server = create0GMemApi({
+const tempDir = await mkdtemp(join(tmpdir(), "ostra-mem-api-smoke-"));
+const server = createOstraMemApi({
   authPath: join(tempDir, "auth.json"),
   memoryPath: join(tempDir, "memory.json")
 });
@@ -17,27 +17,30 @@ try {
   }
 
   const baseUrl = `http://127.0.0.1:${address.port}`;
-  const policy = await readJson("packages/sdk/examples/fixtures/policy.json");
-  const strategy = await readJson("packages/sdk/examples/fixtures/strategy.json");
-  const plan = await readJson("packages/sdk/examples/fixtures/risky-plan.json");
   const apiKey = await createApiKey(baseUrl);
 
-  await postJson(`${baseUrl}/v1/memory`, policy, apiKey);
-  await postJson(`${baseUrl}/v1/memory`, strategy, apiKey);
-  const profile = await getJson(`${baseUrl}/v1/profile?agentId=trader-01&query=vault`, apiKey);
-  const context = await postJson(`${baseUrl}/v1/context`, plan, apiKey);
-  const review = await postJson(`${baseUrl}/v1/review-plan`, plan, apiKey);
+  const memory = await postJson(`${baseUrl}/v1/memory`, {
+    agentId: "enterprise-vault",
+    kind: "policy",
+    title: "Security access policy",
+    content: { scope: "security", note: "Escalate production access through security." },
+    tags: ["security", "policy"]
+  }, apiKey);
+  const vault = await postJson(`${baseUrl}/v1/vault/ingest`, {
+    agentId: "enterprise-vault",
+    title: "Incident Runbook",
+    text: "Escalate Sev-1 incidents through [[Security Policy]] before production access. ".repeat(10),
+    tags: ["runbook", "security"]
+  }, apiKey);
+  const profile = await getJson(`${baseUrl}/v1/profile?agentId=enterprise-vault&query=security`, apiKey);
+  const graph = await getJson(`${baseUrl}/v1/vault/graph?agentId=enterprise-vault`, apiKey);
 
-  console.log(JSON.stringify({ profile, context, review }, null, 2));
+  console.log(JSON.stringify({ memory, vault, profile, graph }, null, 2));
 } finally {
   await new Promise<void>((resolve, reject) =>
     server.close((error) => (error ? reject(error) : resolve()))
   );
   await rm(tempDir, { recursive: true, force: true });
-}
-
-async function readJson(path: string): Promise<unknown> {
-  return JSON.parse(await readFile(path, "utf8"));
 }
 
 async function createApiKey(baseUrl: string): Promise<string> {

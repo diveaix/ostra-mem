@@ -1,55 +1,56 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
-  JsonFileStorage,
-  ZeroGMem,
-  ZeroGMemApiClient,
+  OstraMem,
+  OstraMemApiClient,
   memoryInputSchema,
   tradePlanSchema,
+  vaultDocumentInputSchema,
   type MemoryInput,
-  type TradePlan
-} from "@0g-mem/sdk";
+  type TradePlan,
+  type VaultDocumentInput,
+  type OstraMemConfig
+} from "@ostra-mem/sdk";
 
-export type Create0GMemMcpServerOptions = {
+export type CreateOstraMemMcpServerOptions = {
   apiBaseUrl?: string;
   apiKey?: string;
   allowLocalFallback?: boolean;
   memoryPath?: string;
+  config?: OstraMemConfig;
 };
 
-export function create0GMemMcpServer(options: Create0GMemMcpServerOptions = {}) {
+export function createOstraMemMcpServer(options: CreateOstraMemMcpServerOptions = {}) {
+  const localConfig = createLocalConfig(options.config, options.memoryPath);
   const sdk = options.allowLocalFallback
-    ? new ZeroGMem(
-        {},
-        new JsonFileStorage(options.memoryPath ?? ".0g-mem/mcp-memory.json")
-      )
+    ? new OstraMem(localConfig)
     : undefined;
   const apiClient = options.apiKey
-    ? new ZeroGMemApiClient({
+    ? new OstraMemApiClient({
         apiKey: options.apiKey,
         baseUrl: options.apiBaseUrl ?? "http://127.0.0.1:8787"
       })
     : undefined;
 
   const server = new McpServer({
-    name: "0g-mem",
+    name: "Ostra Mem",
     version: "0.1.0"
   });
 
   server.tool(
-    "0gmem_add_memory",
+    "ostramem_add_memory",
     "Store policy, strategy, trade, feedback, protocol, risk, or lesson memory for an agent.",
     memoryInputSchema.shape,
     async (input: MemoryInput) => {
       const memory = apiClient
         ? await apiClient.memory.add(input)
-        : await requireLocalSdk(sdk).ogmem.memory.add(input);
+        : await requireLocalSdk(sdk).ostraMem.memory.add(input);
       return jsonResult({ memory });
     }
   );
 
   server.tool(
-    "0gmem_get_profile",
+    "ostramem_get_profile",
     "Return stable agent profile memory plus recent dynamic memory and optional search results.",
     {
       agentId: z.string().min(1),
@@ -59,48 +60,25 @@ export function create0GMemMcpServer(options: Create0GMemMcpServerOptions = {}) 
     async (input: { agentId: string; query?: string; limit?: number }) => {
       const profile = apiClient
         ? await apiClient.profile.get(input)
-        : await requireLocalSdk(sdk).ogmem.profile.get(input);
+        : await requireLocalSdk(sdk).ostraMem.profile.get(input);
       return jsonResult({ profile });
     }
   );
 
   server.tool(
-    "0gmem_context_for_trade_plan",
-    "Retrieve relevant context for a transaction plan before risk review.",
+    "ostramem_context_for_trade_plan",
+    "Retrieve relevant context for a transaction-shaped request.",
     tradePlanSchema.shape,
     async (input: TradePlan) => {
       const context = apiClient
         ? await apiClient.context.forTradePlan(input)
-        : await requireLocalSdk(sdk).ogmem.context.forTradePlan(input);
+        : await requireLocalSdk(sdk).ostraMem.context.forTradePlan(input);
       return jsonResult({ context });
     }
   );
 
   server.tool(
-    "aegis_review_plan",
-    "Review a transaction plan and return ALLOW, WARN, BLOCK, or REQUIRE_HUMAN.",
-    tradePlanSchema.shape,
-    async (input) => {
-      if (apiClient) {
-        const review = await apiClient.aegis.risk.reviewPlan(input);
-        return jsonResult(review);
-      }
-
-      const localSdk = requireLocalSdk(sdk);
-      const context = await localSdk.ogmem.context.forTradePlan(input);
-      const verdict = await localSdk.aegis.risk.reviewPlan({ ...input, context });
-      const proof = await localSdk.proofs.recordDecision({
-        agentId: input.agentId,
-        planHash: verdict.planHash,
-        reportHash: verdict.reportHash,
-        decision: verdict.decision
-      });
-      return jsonResult({ context, verdict, proof });
-    }
-  );
-
-  server.tool(
-    "0gmem_record_outcome",
+    "ostramem_record_outcome",
     "Record what happened after a transaction plan was executed, failed, reverted, or skipped.",
     {
       agentId: z.string().min(1),
@@ -120,7 +98,7 @@ export function create0GMemMcpServer(options: Create0GMemMcpServerOptions = {}) 
   );
 
   server.tool(
-    "0gmem_reflect_failure",
+    "ostramem_reflect_failure",
     "Create a failure lesson for a plan using stored outcome and context memory.",
     {
       agentId: z.string().min(1),
@@ -134,13 +112,81 @@ export function create0GMemMcpServer(options: Create0GMemMcpServerOptions = {}) 
     }
   );
 
+  server.tool(
+    "ostramem_ingest_document",
+    "Chunk an enterprise document into encrypted Ostra Mem vault memory and optionally anchor its hash on Zama Sepolia.",
+    vaultDocumentInputSchema.shape,
+    async (input: VaultDocumentInput) => {
+      const vault = apiClient
+        ? await apiClient.vault.ingestDocument(input)
+        : await requireLocalSdk(sdk).vault.ingestDocument(input);
+      return jsonResult({ vault });
+    }
+  );
+
+  server.tool(
+    "ostramem_vault_graph",
+    "Return the document/chunk/link graph for an enterprise vault agent.",
+    {
+      agentId: z.string().min(1)
+    },
+    async (input: { agentId: string }) => {
+      const graph = apiClient
+        ? await apiClient.vault.graph(input)
+        : await requireLocalSdk(sdk).vault.graph(input.agentId);
+      return jsonResult({ graph });
+    }
+  );
+
+  server.tool(
+    "ostramem_zama_status",
+    "Return whether Zama memory anchoring is configured for this server.",
+    {},
+    async () => {
+      const status = apiClient
+        ? await apiClient.zama.status()
+        : requireLocalSdk(sdk).zama.status();
+      return jsonResult({ status });
+    }
+  );
+
   return server;
 }
 
-function requireLocalSdk(sdk: ZeroGMem | undefined) {
+function createLocalConfig(
+  config: OstraMemConfig | undefined,
+  memoryPath = ".ostra-mem/mcp-memory.json"
+): OstraMemConfig {
+  if (!config?.storage) {
+    return {
+      ...(config ?? {}),
+      storage: {
+        provider: "file",
+        path: memoryPath
+      }
+    };
+  }
+
+  if (
+    (config.storage.provider === "file" || config.storage.provider === "file-encrypted") &&
+    !config.storage.path
+  ) {
+    return {
+      ...config,
+      storage: {
+        ...config.storage,
+        path: memoryPath
+      }
+    };
+  }
+
+  return config;
+}
+
+function requireLocalSdk(sdk: OstraMem | undefined) {
   if (!sdk) {
     throw new Error(
-      "0G-Mem MCP requires an API key. Set OGMEM_API_KEY or pass a Bearer token."
+      "Ostra Mem MCP requires an API key. Set OSTRA_MEM_API_KEY or pass a Bearer token."
     );
   }
   return sdk;

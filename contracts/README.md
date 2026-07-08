@@ -1,25 +1,40 @@
-# 0G-Mem Contracts
+# Ostra Mem Contracts
 
-## AegisProofRegistry
+## Zama Sepolia Memory Registry
 
-`AegisProofRegistry.sol` anchors 0G-Mem decision artifacts on 0G Chain.
+`ConfidentialMemoryRegistry.sol` anchors private memory pointers without storing plaintext. It records:
 
-The SDK stores full memory and risk reports offchain, usually on 0G Storage. This contract records compact hashes:
+- agent hash
+- memory hash
+- schema hash
+- storage URI
 
-- `agentId`
-- `planHash`
-- `reportHash`
-- `decision`
-- `recorder`
-- `recordedAt`
+Live Sepolia deployment:
 
-0G Chain deployment notes:
+```text
+ConfidentialMemoryRegistry: 0xC5b79f3c8879B085f25c3ab90668A5ff462DAdb2
+```
 
-- 0G Chain is EVM-compatible.
-- Compile with Cancun EVM settings.
-- Testnet RPC: `https://evmrpc-testnet.0g.ai`
-- Testnet chain ID: `16602`
-- Mainnet RPC: `https://evmrpc.0g.ai`
-- Mainnet chain ID: `16661`
+Compile:
 
-Reference: https://docs.0g.ai/developer-hub/building-on-0g/contracts-on-0g/deploy-contracts
+```bash
+npm run contracts:compile:zama
+```
+
+Deploy:
+
+```bash
+npm run contracts:deploy:zama
+```
+
+Required environment:
+
+```env
+ZAMA_RPC_URL=
+ZAMA_PRIVATE_KEY=
+ZAMA_MEMORY_REGISTRY_ADDRESS=
+```
+
+## Active Contract Surface
+
+The active Ostra Mem contract surface is the memory registry above. It stores hash-only pointers for private memory artifacts; raw memory stays off-chain.

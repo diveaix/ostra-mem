@@ -1,10 +1,10 @@
 import { readFile } from "node:fs/promises";
-import { ZeroGMem } from "../src/index.js";
+import { OstraMem } from "../src/index.js";
 
-export const demoMemoryPath = ".0g-mem/demo-memory.json";
+export const demoMemoryPath = ".ostra-mem/demo-memory.json";
 
-export function createDemoSdk(): ZeroGMem {
-  return new ZeroGMem({
+export function createDemoSdk(): OstraMem {
+  return new OstraMem({
     storage: {
       provider: "file",
       path: demoMemoryPath

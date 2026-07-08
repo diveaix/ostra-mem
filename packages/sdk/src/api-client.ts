@@ -3,24 +3,18 @@ import type {
   ContextResult,
   MemoryInput,
   MemoryRecord,
-  ProofRecordResult,
-  RiskVerdict,
   TradePlan
 } from "./types.js";
+import type { VaultDocumentInput, VaultGraph, VaultIngestResult } from "./vault.js";
+import type { ZamaStatus } from "./zama.js";
 
-export type ZeroGMemApiClientConfig = {
+export type OstraMemApiClientConfig = {
   baseUrl?: string;
   apiKey: string;
   fetchImpl?: typeof fetch;
 };
 
-export type ReviewPlanResult = {
-  context: ContextResult;
-  verdict: RiskVerdict;
-  proof: ProofRecordResult;
-};
-
-export class ZeroGMemApiClient {
+export class OstraMemApiClient {
   readonly memory = {
     add: (input: MemoryInput) =>
       this.request<{ memory: MemoryRecord }>("/v1/memory", {
@@ -69,13 +63,24 @@ export class ZeroGMemApiClient {
       }).then((result) => result.context)
   };
 
-  readonly aegis = {
-    risk: {
-      reviewPlan: (input: TradePlan): Promise<ReviewPlanResult> =>
-        this.request<ReviewPlanResult>("/v1/review-plan", {
-          method: "POST",
-          body: input
-        })
+  readonly zama = {
+    status: (): Promise<ZamaStatus> =>
+      this.request<{ status: ZamaStatus }>("/v1/zama/status").then(
+        (result) => result.status
+      )
+  };
+
+  readonly vault = {
+    ingestDocument: (input: VaultDocumentInput): Promise<VaultIngestResult> =>
+      this.request<{ vault: VaultIngestResult }>("/v1/vault/ingest", {
+        method: "POST",
+        body: input
+      }).then((result) => result.vault),
+    graph: (input: { agentId: string }): Promise<VaultGraph> => {
+      const params = new URLSearchParams({ agentId: input.agentId });
+      return this.request<{ graph: VaultGraph }>(
+        `/v1/vault/graph?${params.toString()}`
+      ).then((result) => result.graph);
     }
   };
 
@@ -106,7 +111,7 @@ export class ZeroGMemApiClient {
   private readonly baseUrl: string;
   private readonly fetchImpl: typeof fetch;
 
-  constructor(private readonly config: ZeroGMemApiClientConfig) {
+  constructor(private readonly config: OstraMemApiClientConfig) {
     this.baseUrl = (config.baseUrl ?? "http://127.0.0.1:8787").replace(/\/$/, "");
     this.fetchImpl = config.fetchImpl ?? fetch;
   }
@@ -131,10 +136,13 @@ export class ZeroGMemApiClient {
       const message =
         payload && typeof payload === "object" && "error" in payload
           ? String(payload.error)
-          : `0G-Mem API returned ${response.status}`;
+          : `Ostra Mem API returned ${response.status}`;
       throw new Error(message);
     }
 
     return payload as T;
   }
 }
+
+export type ZeroGMemApiClientConfig = OstraMemApiClientConfig;
+export { OstraMemApiClient as ZeroGMemApiClient };

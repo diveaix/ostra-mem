@@ -2,10 +2,11 @@ import { ContextClient } from "./context.js";
 import { MemoryClient } from "./memory.js";
 import { ProfileClient } from "./profile.js";
 import { InMemoryStorage, JsonFileStorage, type MemoryStorage } from "./storage.js";
+import { EncryptedJsonFileStorage } from "./storage-encrypted.js";
 import { ZeroGStorageAdapter } from "./storage-0g.js";
-import type { ZeroGMemConfig } from "./types.js";
+import type { OstraMemConfig } from "./types.js";
 
-export class ZeroGMemCore {
+export class OstraMemCore {
   readonly memory: MemoryClient;
   readonly context: ContextClient;
   readonly profile: ProfileClient;
@@ -18,10 +19,20 @@ export class ZeroGMemCore {
 }
 
 export function createStorageFromConfig(
-  storage: ZeroGMemConfig["storage"] = { provider: "local" }
+  storage: OstraMemConfig["storage"] = { provider: "local" }
 ): MemoryStorage {
   if (storage.provider === "file") {
     return new JsonFileStorage(storage.path);
+  }
+
+  if (storage.provider === "file-encrypted") {
+    if (!storage.vaultKey) {
+      throw new Error("Encrypted file storage requires vaultKey in storage config.");
+    }
+    return new EncryptedJsonFileStorage({
+      path: storage.path,
+      vaultKey: storage.vaultKey
+    });
   }
 
   if (storage.provider !== "0g") {
@@ -40,3 +51,5 @@ export function createStorageFromConfig(
     privateKey: storage.privateKey
   });
 }
+
+export { OstraMemCore as ZeroGMemCore };
