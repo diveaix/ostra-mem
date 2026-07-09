@@ -36,6 +36,96 @@
   --nav-height: 56px;
 }
 
+@media (hover: hover) and (pointer: fine) {
+  html.glass-cursor-active,
+  html.glass-cursor-active * {
+    cursor: none !important;
+  }
+}
+
+.glass-cursor {
+  --cursor-size: 28px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2147483647;
+  width: var(--cursor-size);
+  height: var(--cursor-size);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(-100px, -100px, 0) translate(-50%, -50%);
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.18) 28%, transparent 48%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(74, 158, 237, 0.18));
+  box-shadow:
+    0 18px 38px rgba(5, 14, 30, 0.28),
+    0 0 0 1px rgba(74, 158, 237, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -12px 20px rgba(74, 158, 237, 0.12);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  transition:
+    width 160ms ease,
+    height 160ms ease,
+    opacity 140ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+  will-change: transform, opacity, width, height;
+}
+
+.glass-cursor::before {
+  position: absolute;
+  inset: -8px;
+  content: "";
+  border-radius: inherit;
+  background: radial-gradient(circle, rgba(74, 158, 237, 0.22), transparent 68%);
+  filter: blur(8px);
+  opacity: 0.72;
+}
+
+.glass-cursor::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  content: "";
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 16px rgba(74, 158, 237, 0.85);
+  transform: translate(-50%, -50%);
+}
+
+.glass-cursor.is-visible {
+  opacity: 1;
+}
+
+.glass-cursor.is-hovering {
+  --cursor-size: 40px;
+  border-color: rgba(74, 158, 237, 0.58);
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.16) 26%, transparent 48%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.24), rgba(74, 158, 237, 0.26));
+  box-shadow:
+    0 22px 46px rgba(5, 14, 30, 0.34),
+    0 0 0 1px rgba(74, 158, 237, 0.28),
+    0 0 34px rgba(74, 158, 237, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.glass-cursor.is-down {
+  --cursor-size: 24px;
+}
+
+@media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .glass-cursor {
+    display: none;
+  }
+}
+
 /* Simple dashboard */
 .dashboard-layout-simple {
   max-width: 1180px;
