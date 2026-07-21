@@ -104,7 +104,7 @@ Example Streamable HTTP MCP client config:
   "mcpServers": {
     "ostramem": {
       "type": "streamable-http",
-      "url": "https://ostramem-backend-production.up.railway.app/mcp",
+      "url": "https://your-api.example.com/mcp",
       "bearerTokenEnvVar": "OSTRA_MEM_API_KEY"
     }
   }

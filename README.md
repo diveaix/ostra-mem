@@ -146,8 +146,25 @@ ZAMA_EXPECTED_CHAIN_ID=11155111
 ZAMA_MEMORY_REGISTRY_ADDRESS=0xC5b79f3c8879B085f25c3ab90668A5ff462DAdb2
 
 OSTRA_MEM_APP_URL=http://127.0.0.1:5173
+OSTRA_MEM_RETURN_DEV_TOKENS=false
 OSTRA_MEM_VAULT_KEY=
 ```
+
+For a frontend and backend deployed on different origins, set the public URLs on the
+corresponding services:
+
+```env
+# Backend
+OSTRA_MEM_APP_URL=https://your-frontend.example.com
+OSTRA_MEM_RETURN_DEV_TOKENS=false
+
+# Frontend build
+VITE_OSTRA_MEM_API_URL=https://your-api.example.com
+```
+
+HTTPS requests receive `SameSite=None; Secure` session cookies automatically so the
+dashboard session can cross the frontend/backend origin boundary. The legacy
+`OG_MEM_*` environment names remain supported.
 
 Generate a vault key:
 

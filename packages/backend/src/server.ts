@@ -21,7 +21,9 @@ const apiServer = createOstraMemApi({
   memoryPath,
   auth: {
     appUrl: process.env.OSTRA_MEM_APP_URL ?? process.env.OG_MEM_APP_URL,
-    returnDevVerificationToken: process.env.OG_MEM_RETURN_DEV_TOKENS !== "false"
+    returnDevVerificationToken:
+      (process.env.OSTRA_MEM_RETURN_DEV_TOKENS ??
+        process.env.OG_MEM_RETURN_DEV_TOKENS) === "true"
   }
 });
 const mcpApp = createOstraMemMcpHttpApp({ apiBaseUrl });

@@ -54,7 +54,8 @@ export function createOstraMemApi(options: ApiOptions = {}) {
       DEFAULT_APP_URL,
     returnDevVerificationToken:
       options.auth?.returnDevVerificationToken ??
-      process.env.OG_MEM_RETURN_DEV_TOKENS !== "false"
+      (process.env.OSTRA_MEM_RETURN_DEV_TOKENS ??
+        process.env.OG_MEM_RETURN_DEV_TOKENS) === "true"
   };
 
   return createServer(async (request, response) => {
@@ -145,7 +146,7 @@ async function routeRequest(
         user: publicUser(result.user)
       },
       {
-        "Set-Cookie": makeSessionCookie(result.sessionToken)
+        "Set-Cookie": makeSessionCookie(request, result.sessionToken)
       }
     );
     return;
@@ -159,7 +160,7 @@ async function routeRequest(
 
     const result = await context.auth.verifyEmail(token);
     sendRedirect(request, response, `${context.appUrl.replace(/\/$/, "")}/#dashboard`, {
-      "Set-Cookie": makeSessionCookie(result.sessionToken)
+      "Set-Cookie": makeSessionCookie(request, result.sessionToken)
     });
     return;
   }
@@ -182,7 +183,7 @@ async function routeRequest(
       200,
       { ok: true },
       {
-        "Set-Cookie": clearSessionCookie()
+        "Set-Cookie": clearSessionCookie(request)
       }
     );
     return;
@@ -550,8 +551,8 @@ function parseCookies(header: string | undefined): Record<string, string> {
   );
 }
 
-function makeSessionCookie(sessionToken: string): string {
-  const sameSite = process.env.OG_MEM_COOKIE_SAMESITE ?? "Lax";
+function makeSessionCookie(request: IncomingMessage, sessionToken: string): string {
+  const { sameSite, secure } = sessionCookieOptions(request);
   const parts = [
     `${SESSION_COOKIE}=${encodeURIComponent(sessionToken)}`,
     "Path=/",
@@ -559,14 +560,14 @@ function makeSessionCookie(sessionToken: string): string {
     `SameSite=${sameSite}`,
     "Max-Age=604800"
   ];
-  if (process.env.OG_MEM_COOKIE_SECURE === "true") {
+  if (secure) {
     parts.push("Secure");
   }
   return parts.join("; ");
 }
 
-function clearSessionCookie(): string {
-  const sameSite = process.env.OG_MEM_COOKIE_SAMESITE ?? "Lax";
+function clearSessionCookie(request: IncomingMessage): string {
+  const { sameSite, secure } = sessionCookieOptions(request);
   const parts = [
     `${SESSION_COOKIE}=`,
     "Path=/",
@@ -574,10 +575,48 @@ function clearSessionCookie(): string {
     `SameSite=${sameSite}`,
     "Max-Age=0"
   ];
-  if (process.env.OG_MEM_COOKIE_SECURE === "true") {
+  if (secure) {
     parts.push("Secure");
   }
   return parts.join("; ");
+}
+
+function sessionCookieOptions(request: IncomingMessage): {
+  sameSite: "Strict" | "Lax" | "None";
+  secure: boolean;
+} {
+  const secureRequest = requestProtocol(request) === "https";
+  const sameSite =
+    readSameSite(
+      process.env.OSTRA_MEM_COOKIE_SAMESITE ?? process.env.OG_MEM_COOKIE_SAMESITE
+    ) ?? (secureRequest ? "None" : "Lax");
+  const configuredSecure = readBoolean(
+    process.env.OSTRA_MEM_COOKIE_SECURE ?? process.env.OG_MEM_COOKIE_SECURE
+  );
+
+  return {
+    sameSite,
+    secure: sameSite === "None" || (configuredSecure ?? secureRequest)
+  };
+}
+
+function requestProtocol(request: IncomingMessage): string {
+  const forwardedProto = request.headers["x-forwarded-proto"];
+  const value = Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto;
+  return value?.split(",")[0].trim().toLowerCase() ?? "http";
+}
+
+function readSameSite(value: string | undefined): "Strict" | "Lax" | "None" | undefined {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === "strict") return "Strict";
+  if (normalized === "lax") return "Lax";
+  if (normalized === "none") return "None";
+  return undefined;
+}
+
+function readBoolean(value: string | undefined): boolean | undefined {
+  if (value === undefined) return undefined;
+  return value.trim().toLowerCase() === "true";
 }
 
 function sendJson(

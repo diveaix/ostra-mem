@@ -14,11 +14,63 @@ afterEach(async () => {
 });
 
 describe("Ostra Mem API", () => {
+  it("returns a confirmation link without exposing a development token", async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "ostra-mem-api-"));
+    const server = createOstraMemApi({
+      authPath: join(tempDir, "auth.json"),
+      memoryPath: join(tempDir, "memory.json"),
+      auth: { returnDevVerificationToken: false }
+    });
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+
+    try {
+      const address = server.address();
+      if (address === null || typeof address === "string") {
+        throw new Error("Expected TCP server address");
+      }
+      const baseUrl = `http://127.0.0.1:${address.port}`;
+      const loginResponse = await fetch(`${baseUrl}/auth/request-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "owner@example.com" })
+      });
+      const login = (await loginResponse.json()) as {
+        verificationUrl: string;
+        devVerificationToken?: string;
+      };
+
+      expect(loginResponse.status).toBe(200);
+      expect(login.verificationUrl).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/auth\/verify\?token=/);
+      expect(login.devVerificationToken).toBeUndefined();
+
+      const token = new URL(login.verificationUrl).searchParams.get("token");
+      expect(token).toBeTruthy();
+      const verifyResponse = await fetch(`${baseUrl}/auth/verify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Forwarded-Proto": "https"
+        },
+        body: JSON.stringify({ token })
+      });
+      const cookie = verifyResponse.headers.get("set-cookie");
+
+      expect(verifyResponse.status).toBe(200);
+      expect(cookie).toContain("SameSite=None");
+      expect(cookie).toContain("Secure");
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve()))
+      );
+    }
+  });
+
   it("requires API key ownership for memory and vault routes", async () => {
     tempDir = await mkdtemp(join(tmpdir(), "ostra-mem-api-"));
     const server = createOstraMemApi({
       authPath: join(tempDir, "auth.json"),
-      memoryPath: join(tempDir, "memory.json")
+      memoryPath: join(tempDir, "memory.json"),
+      auth: { returnDevVerificationToken: true }
     });
     await new Promise<void>((resolve) => server.listen(0, resolve));
 
