@@ -6,7 +6,8 @@ import { createOstraMemApi } from "../src/index.js";
 const tempDir = await mkdtemp(join(tmpdir(), "ostra-mem-api-smoke-"));
 const server = createOstraMemApi({
   authPath: join(tempDir, "auth.json"),
-  memoryPath: join(tempDir, "memory.json")
+  memoryPath: join(tempDir, "memory.json"),
+  auth: { returnDevVerificationToken: true }
 });
 await new Promise<void>((resolve) => server.listen(0, resolve));
 

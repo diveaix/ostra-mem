@@ -163,7 +163,7 @@ export const connectionMethods: ConnectionMethod[] = [
     title: "Streamable HTTP MCP",
     subtitle: "Best for Codex, Claude, and LLM agents that connect through a hosted MCP URL.",
     icon: Plug,
-    command: "https://ostramem-backend-production.up.railway.app/mcp",
+    command: "https://your-api.example.com/mcp",
     bullets: [
       "Paste one HTTPS URL into the MCP client",
       "Use the agent API key as the bearer token",
@@ -175,7 +175,7 @@ export const connectionMethods: ConnectionMethod[] = [
     title: "REST API",
     subtitle: "Best for Python agents, workers, notebooks, and hosted services.",
     icon: Link2,
-    command: "https://ostramem-backend-production.up.railway.app/v1",
+    command: "https://your-api.example.com/v1",
     bullets: [
       "POST /memory",
       "POST /vault/ingest and GET /vault/graph",

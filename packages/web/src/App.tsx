@@ -120,10 +120,15 @@ const configuredApiBaseUrl = (
 const apiBaseUrl =
   configuredApiBaseUrl ??
   (import.meta.env.PROD
-    ? "https://ostramem-backend-production.up.railway.app"
+    ? window.location.origin
     : "http://127.0.0.1:8787");
 
-const publicApiBaseUrl = "https://ostramem-backend-production.up.railway.app";
+const publicApiBaseUrl = apiBaseUrl;
+const resolvedConnectionMethods = connectionMethods.map((method) => {
+  if (method.id === "mcp") return { ...method, command: `${publicApiBaseUrl}/mcp` };
+  if (method.id === "api") return { ...method, command: `${publicApiBaseUrl}/v1` };
+  return method;
+});
 
 const emptyManualForm: ManualMemoryForm = {
   agentId: agentOptions[0].id,
@@ -695,21 +700,8 @@ export function App() {
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? `API returned ${response.status}`);
-      if (payload.devVerificationToken) {
-        const verifyResponse = await fetch(`${apiBaseUrl}/auth/verify`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: payload.devVerificationToken })
-        });
-        const verifyPayload = await verifyResponse.json();
-        if (!verifyResponse.ok) {
-          throw new Error(verifyPayload.error ?? `API returned ${verifyResponse.status}`);
-        }
-        await refreshAuth();
-        setLoginState("sent");
-        setLoginMessage("Signed in for local development.");
-        return;
+      if (typeof payload.verificationUrl !== "string" || !payload.verificationUrl) {
+        throw new Error("API did not return a confirmation link.");
       }
       setVerificationUrl(payload.verificationUrl);
       setLoginState("sent");
@@ -2155,7 +2147,10 @@ function Connect({
 }) {
   const [activeMethod, setActiveMethod] = useState<MethodId>("sdk");
   const [copyLabel, setCopyLabel] = useState("Copy");
-  const method = useMemo(() => connectionMethods.find((x) => x.id === activeMethod) ?? connectionMethods[0], [activeMethod]);
+  const method = useMemo(
+    () => resolvedConnectionMethods.find((x) => x.id === activeMethod) ?? resolvedConnectionMethods[0],
+    [activeMethod]
+  );
   const Icon = method.icon;
 
   async function copyCommand() {
@@ -2191,7 +2186,7 @@ function Connect({
 
       {/* ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ Method Selector ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ */}
       <section className="connect-methods">
-        {connectionMethods.map((item) => {
+        {resolvedConnectionMethods.map((item) => {
           const TabIcon = item.icon;
           const isActive = item.id === activeMethod;
           return (
@@ -2362,7 +2357,7 @@ function EmptyPanel({ detail, eyebrow, title }: { detail: string; eyebrow: strin
 
 function connectionSnippet(method: MethodId) {
   if (method === "api") return `await fetch("${publicApiBaseUrl}/v1/memory", {\n  method: "POST",\n  headers: {\n    "Authorization": "Bearer " + process.env.OSTRA_MEM_API_KEY,\n    "Content-Type": "application/json"\n  },\n  body: JSON.stringify(memory)\n});`;
-  if (method === "mcp") return `{\n  "name": "ostramem",\n  "type": "streamable-http",\n  "url": "https://ostramem-backend-production.up.railway.app/mcp",\n  "bearerTokenEnvVar": "OSTRA_MEM_API_KEY"\n}`;
+  if (method === "mcp") return `{\n  "name": "ostramem",\n  "type": "streamable-http",\n  "url": "${publicApiBaseUrl}/mcp",\n  "bearerTokenEnvVar": "OSTRA_MEM_API_KEY"\n}`;
   return `import { OstraMemApiClient } from "@ostra-mem/sdk";\n\nconst client = new OstraMemApiClient({\n  apiKey: process.env.OSTRA_MEM_API_KEY,\n  baseUrl: "${publicApiBaseUrl}"\n});\n\nawait client.vault.ingestDocument({\n  agentId: "enterprise-vault",\n  title: "Security Runbook",\n  text: markdown,\n  anchor: true\n});\n\nconst graph = await client.vault.graph({ agentId: "enterprise-vault" });`;
 }
 
@@ -2373,7 +2368,7 @@ function SyntaxHighlightedCode({ method }: { method: MethodId }) {
         <span className="syn-kw">import</span>{" { OstraMemApiClient } "}<span className="syn-kw">from</span> <span className="syn-str">"@ostra-mem/sdk"</span>{";\n\n"}
         <span className="syn-kw">const</span> client = <span className="syn-kw">new</span> <span className="syn-fn">OstraMemApiClient</span>{"({\n"}
         {"  "}<span className="syn-prop">apiKey</span>{": process.env."}<span className="syn-prop">OSTRA_MEM_API_KEY</span>{",\n"}
-        {"  "}<span className="syn-prop">baseUrl</span>{": "}<span className="syn-str">"https://ostramem-backend-production.up.railway.app"</span>{"\n"}{"})"}{";"}
+        {"  "}<span className="syn-prop">baseUrl</span>{": \""}<span className="syn-str">{publicApiBaseUrl}</span>{"\"\n"}{"})"}{";"}
         {"\n\n"}<span className="syn-kw">await</span> client.vault.<span className="syn-fn">ingestDocument</span>{"({\n"}
         {"  "}<span className="syn-prop">agentId</span>{": "}<span className="syn-str">"enterprise-vault"</span>{",\n"}
         {"  "}<span className="syn-prop">title</span>{": "}<span className="syn-str">"Security Runbook"</span>{",\n"}
@@ -2390,7 +2385,7 @@ function SyntaxHighlightedCode({ method }: { method: MethodId }) {
         {"{\n"}
         {"  "}<span className="syn-prop">"name"</span>{": "}<span className="syn-str">"ostramem"</span>{",\n"}
         {"  "}<span className="syn-prop">"type"</span>{": "}<span className="syn-str">"streamable-http"</span>{",\n"}
-        {"  "}<span className="syn-prop">"url"</span>{": "}<span className="syn-str">"https://ostramem-backend-production.up.railway.app/mcp"</span>{",\n"}
+        {"  "}<span className="syn-prop">"url"</span>{": \""}<span className="syn-str">{publicApiBaseUrl}/mcp</span>{"\",\n"}
         {"  "}<span className="syn-prop">"bearerTokenEnvVar"</span>{": "}<span className="syn-str">"OSTRA_MEM_API_KEY"</span>{"\n"}
         {"}"}
       </code>
@@ -2399,7 +2394,7 @@ function SyntaxHighlightedCode({ method }: { method: MethodId }) {
   // api
   return (
     <code>
-      <span className="syn-kw">await</span> <span className="syn-fn">fetch</span>{"("}<span className="syn-str">"https://ostramem-backend-production.up.railway.app/v1/memory"</span>{", {\n"}
+      <span className="syn-kw">await</span> <span className="syn-fn">fetch</span>{"(\""}<span className="syn-str">{publicApiBaseUrl}/v1/memory</span>{"\", {\n"}
       {"  "}<span className="syn-prop">method</span>{": "}<span className="syn-str">"POST"</span>{",\n"}
       {"  "}<span className="syn-prop">headers</span>{": {\n"}
       {"    "}<span className="syn-str">"Authorization"</span>{": "}<span className="syn-str">"Bearer "</span>{" + process.env."}<span className="syn-prop">OSTRA_MEM_API_KEY</span>{",\n"}
